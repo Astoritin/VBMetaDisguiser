@@ -1,7 +1,7 @@
-id=boothashdisguiser
-name=Boot Hash Disguiser
+id=vbmetadisguiser
+name=VBMeta Disguiser
 version=v1.0.0
 versionCode=1
 author=Astoritin Ambrosius
-updateJson=https://raw.githubusercontent.com/Astoritin/Boot_Hash_Disguiser/main/webpage/update.json
-description=A module to disguise the status of vbmeta boot hash✨
+updateJson=https://raw.githubusercontent.com/Astoritin/VBMetaDisguiser/main/webpage/update.json
+description=A module to disguise the props of vbmeta boot hash✨
