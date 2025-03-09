@@ -1,4 +1,4 @@
 #!/system/bin/sh
 MODDIR=${0%/*}
 
-rm -rf "/data/adb/boothashdisguiser"
+rm -rf "/data/adb/vbmetadisguiser"
