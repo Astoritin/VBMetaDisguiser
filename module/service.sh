@@ -12,19 +12,12 @@ MOD_VER="$(sed -n 's/^version=\(.*\)/\1/p' "${MODDIR}/module.prop") ($(sed -n 's
 config_loader() {
 
     logowl "Start loading configuration"
-    if [[ ! -f "$CONFIG_FILE" ]]; then
-        logowl "Configuration file does not exist: $CONFIG_FILE" "ERROR"
-        logowl "$MOD_NAME will use default values"
-        return 1
-    fi
-    boot_hash=$(init_variables "boot_hash" "$CONFIG_FILE" "")
-    vbmeta_size=$(init_variables "vbmeta_size" "$CONFIG_FILE" "4096")
 
-    logowl "boot_hash: $boot_hash"
-    logowl "vbmeta_size: $vbmeta_size"
+    boot_hash=$(init_variables "boot_hash" "$CONFIG_FILE")
+    vbmeta_size=$(init_variables "vbmeta_size" "$CONFIG_FILE")
 
-    verify_variables "boot_hash" "$boot_hash" "" ""
-    verify_variables "vbmeta_size" "$vbmeta_size" "^[1-9]\d*$" "4096"
+    verify_variables "boot_hash" "$boot_hash" "^[0-9a-fA-F]{64}$"
+    verify_variables "vbmeta_size" "$vbmeta_size" "^[1-9][0-9]*$"
 
 }
 
@@ -32,37 +25,31 @@ config_loader() {
 
 init_logowl "$LOG_DIR"
 install_env_check
-print_line >> "$LOG_FILE"
 module_intro >> "$LOG_FILE" 
 logowl "Starting service.sh"
+config_loader >> "$LOG_FILE"
 print_line >> "$LOG_FILE"
-config_loader
+
+resetprop "ro.boot.vbmeta.device_state" "locked"
+resetprop "ro.boot.vbmeta.avb_version" "2.0"
+resetprop "ro.boot.vbmeta.hash_alg" "sha256"
+
+if [ -s "$CONFIG_FILE" ]; then
+    resetprop "ro.boot.vbmeta.digest" "$BOOT_HASH"
+    resetprop "ro.boot.vbmeta.size" "$VBMETA_SIZE"
+fi
+
+print_line >> "$LOG_FILE"
+logowl "Result:"
+logowl "ro.boot.vbmeta.device_state=$(getprop ro.boot.vbmeta.device_state)"
+logowl "ro.boot.vbmeta.avb_version=$(ro.boot.vbmeta.avb_version)"
+logowl "ro.boot.vbmeta.hash_alg=$(ro.boot.vbmeta.hash_alg)"
+logowl "ro.boot.vbmeta.size=$(ro.boot.vbmeta.size)"
+logowl "ro.boot.vbmeta.digest=$(ro.boot.vbmeta.digest)"
 print_line >> "$LOG_FILE"
 
-{
-    while [ "$(getprop sys.boot_completed)" != "1" ]; do
-        sleep 1
-    done
-
-    resetprop -n "ro.boot.vbmeta.device_state" "locked"
-    resetprop -n "ro.boot.vbmeta.avb_version" "2.0"
-    resetprop -n "ro.boot.vbmeta.hash_alg" "sha256"
-
-    if [ -s "$CONFIG_FILE" ]; then
-        resetprop -n "ro.boot.vbmeta.digest" "$BOOT_HASH"
-        resetprop -n "ro.boot.vbmeta.size" "$VBMETA_SIZE"
-    fi
-
-    print_line >> "$LOG_FILE"
-    logowl "Result:"
-    logowl "ro.boot.vbmeta.device_state=$(getprop ro.boot.vbmeta.device_state)"
-    logowl "ro.boot.vbmeta.avb_version=$(ro.boot.vbmeta.avb_version)"
-    logowl "ro.boot.vbmeta.hash_alg=$(ro.boot.vbmeta.hash_alg)"
-    logowl "ro.boot.vbmeta.size=$(ro.boot.vbmeta.size)"
-    logowl "ro.boot.vbmeta.digest=$(ro.boot.vbmeta.digest)"
-    print_line >> "$LOG_FILE"
-
-    logowl "Variables before case closed"
-    debug_print_values >> "$LOG_FILE"
-    logowl "service.sh case closed!"
-} &
+logowl "Variables before case closed"
+print_line >> "$LOG_FILE"
+debug_print_values >> "$LOG_FILE"
+print_line >> "$LOG_FILE"
+logowl "service.sh case closed!"
