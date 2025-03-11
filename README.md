@@ -1,4 +1,4 @@
-# Boot Hash 伪装者 / Boot Hash Disguiser
+# VBMeta 伪装者 / VBMeta Disguiser
 
 一个用于伪装 VBMeta 属性的 Magisk 模块
 / A Magisk module to disguise VBMeta props
