@@ -1,1 +1,6 @@
-
+{
+    "versionCode": 200,
+    "version": "v1.2.0",
+    "zipUrl": "https://github.com/Astoritin/VBMetaDisguiser/releases/download/v1.2.0/VBMetaDisguiser-v1.2.0.zip",
+    "changelog": "https://raw.githubusercontent.com/Astoritin/VBMetaDisguiser/main/webpage/changelog.md"
+}
