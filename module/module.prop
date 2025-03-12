@@ -1,7 +1,7 @@
 id=vbmetadisguiser
 name=VBMeta Disguiser
-version=v1.2.0
-versionCode=200
+version=v1.2.1
+versionCode=220
 author=Astoritin Ambrosius
 updateJson=https://raw.githubusercontent.com/Astoritin/VBMetaDisguiser/main/webpage/update.json
-description=A module to disguise the props of vbmeta boot hash.
+description=A module to disguise the props of vbmeta and encryption status.
