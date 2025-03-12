@@ -44,7 +44,9 @@ if [ -s "$CONFIG_FILE" ]; then
     resetprop -n "ro.boot.vbmeta.digest" "$BOOT_HASH"
     resetprop -n "ro.boot.vbmeta.size" "$VBMETA_SIZE"
     resetprop -n "ro.boot.vbmeta.avb_version" "$AVB_VERSION"
-    resetprop -n "ro.crypto.state" "$CRYPTO_STATE"
+    if [ -n "$CRYPTO_STATE" ]; then
+        resetprop -n "ro.crypto.state" "$CRYPTO_STATE"
+    fi
 fi
 
 logowl "Specific variables"
