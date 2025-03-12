@@ -20,10 +20,12 @@ config_loader() {
     avb_version=$(init_variables "avb_version" "$CONFIG_FILE")
     vbmeta_size=$(init_variables "vbmeta_size" "$CONFIG_FILE")
     boot_hash=$(init_variables "boot_hash" "$CONFIG_FILE")
+    crypto_state=$(init_variables "crypto_state" "$CONFIG_FILE")
 
     verify_variables "avb_version" "$avb_version" "^[1-9][0-9]*\.[0-9]*$|^[1-9][0-9]*$"
     verify_variables "vbmeta_size" "$vbmeta_size" "^[1-9][0-9]*$"
     verify_variables "boot_hash" "$boot_hash" "^[0-9a-fA-F]{64}$"
+    verify_variables "crypto_state" "$crypto_state" "^encrypted$|^unencrypted$|^unsupported$"
 
 }
 
@@ -35,22 +37,24 @@ logowl "Starting service.sh"
 config_loader >> "$LOG_FILE"
 print_line >> "$LOG_FILE"
 
-resetprop "ro.boot.vbmeta.device_state" "locked"
-resetprop "ro.boot.vbmeta.hash_alg" "sha256"
+resetprop -n "ro.boot.vbmeta.device_state" "locked"
+resetprop -n "ro.boot.vbmeta.hash_alg" "sha256"
 
 if [ -s "$CONFIG_FILE" ]; then
-    resetprop "ro.boot.vbmeta.digest" "$BOOT_HASH"
-    resetprop "ro.boot.vbmeta.size" "$VBMETA_SIZE"
-    resetprop "ro.boot.vbmeta.avb_version" "$AVB_VERSION"
+    resetprop -n "ro.boot.vbmeta.digest" "$BOOT_HASH"
+    resetprop -n "ro.boot.vbmeta.size" "$VBMETA_SIZE"
+    resetprop -n "ro.boot.vbmeta.avb_version" "$AVB_VERSION"
+    resetprop -n "ro.crypto.state" "$CRYPTO_STATE"
 fi
 
+logowl "Specific variables"
 print_line >> "$LOG_FILE"
-logowl "Result:"
 logowl "ro.boot.vbmeta.device_state=$(getprop ro.boot.vbmeta.device_state)"
-logowl "ro.boot.vbmeta.avb_version=$(ro.boot.vbmeta.avb_version)"
-logowl "ro.boot.vbmeta.hash_alg=$(ro.boot.vbmeta.hash_alg)"
-logowl "ro.boot.vbmeta.size=$(ro.boot.vbmeta.size)"
-logowl "ro.boot.vbmeta.digest=$(ro.boot.vbmeta.digest)"
+logowl "ro.boot.vbmeta.avb_version=$(getprop ro.boot.vbmeta.avb_version)"
+logowl "ro.boot.vbmeta.hash_alg=$(getprop ro.boot.vbmeta.hash_alg)"
+logowl "ro.boot.vbmeta.size=$(getprop ro.boot.vbmeta.size)"
+logowl "ro.boot.vbmeta.digest=$(getprop ro.boot.vbmeta.digest)"
+logowl "ro.crypto.state=$(getprop ro.crypto.state)"
 print_line >> "$LOG_FILE"
 
 logowl "Variables before case closed"
