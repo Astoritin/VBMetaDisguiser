@@ -17,17 +17,17 @@ fi
 
 . "$TMPDIR/aautilities.sh"
 
+install_env_check
+init_logowl "$LOG_DIR"
 logowl "Setting up $MOD_NAME"
 logowl "Version: $MOD_VER"
-init_logowl "$LOG_DIR"
 show_system_info
-install_env_check 
 clean_old_logs "$LOG_DIR" 20
 
 if [ "$API" -lt 27 ]; then
     logowl "Detect Android version is lower than 8 (oreo)!" "ERROR"
     logowl "$MOD_NAME does not support Android 8 and lower"
-    about "since VBMeta does NOT exist in these old Android version!"
+    about "since VBMeta props does NOT exist in these old Android version!"
 fi
 
 logowl "Extract module files"
