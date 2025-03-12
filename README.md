@@ -23,8 +23,8 @@ This Magisk module WILL NOT be able to work if your device doesn't get root acce
 <br><br><br>
 请在 密钥验证 / Native Detector 中获取 Boot Hash 并将其保存到`/data/adb/vbmetadisguiser/vbmeta.conf`。<br><br>
 Please obtain the Boot Hash in **Key Attestation/Native Detector** and save it to the file `/data/adb/vbmetadisguiser/vbmeta.conf`. <br><br><br>
-默认情况下，AVB 版本会被设定为 `2.0`，而 VBMeta 分区的大小值会被设定为 `4096`，你可以自行在`/data/adb/vbmetadisguiser/vbmeta.conf`设定 AVB 的版本号。<br>
-AVB version will be set as `2.0` by default, the size of VBMeta partition will be set as `4096` by default, you can set it in `/data/adb/vbmetadisguiser/vbmeta.conf`.
+默认情况下，AVB 版本会被设定为 `2.0`，而 VBMeta 分区的大小值会被设定为 `4096`，你可以自行在`/data/adb/vbmetadisguiser/vbmeta.conf`设定 AVB 的版本号和你的ROM的 vbmeta 分区的大小。<br>
+AVB version will be set as `2.0` by default, the size of VBMeta partition will be set as `4096` by default, you can set the details in `/data/adb/vbmetadisguiser/vbmeta.conf`.
 
 
 <details open>
