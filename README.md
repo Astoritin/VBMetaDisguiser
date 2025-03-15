@@ -30,6 +30,6 @@ You can set the details in `/data/adb/vbmetadisguiser/vbmeta.conf` included AVB 
 
 <details open>
 <summary>注意 / NOTICE</summary>
-在 `/data/adb/vbmetadisguiser/vbmeta.conf` 中只需保存键值对的形式 (即键名=键值)，不支持其它注解。<br><br>
-Save the form of keypair ONLY (key=value) in `/data/adb/vbmetadisguiser/vbmeta.conf`, any additional comments or annotations is not supported.
+在 <code>/data/adb/vbmetadisguiser/vbmeta.conf</code> 中只需保存键值对的形式 (即键名=键值)，不支持其它注解。<br><br>
+Save the form of keypair ONLY (key=value) in <code>/data/adb/vbmetadisguiser/vbmeta.conf</code>, any additional comments or annotations is not supported.
 </details>
