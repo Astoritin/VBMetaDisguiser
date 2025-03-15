@@ -20,12 +20,13 @@ This Magisk module WILL NOT be able to work if your device doesn't get root acce
 ## 详细信息 / Details
 
 该模块的目的之一只是为了过某两个检测器的某一项……哈哈。 / One of the purpose of writing this module is bypass the specific items in specific detectors...lol.
-<br><br><br>
-请在 密钥验证 / Native Detector 中获取 Boot Hash 并将其保存到`/data/adb/vbmetadisguiser/vbmeta.conf`。<br><br>
-Please obtain the Boot Hash in **Key Attestation/Native Detector** and save it to the file `/data/adb/vbmetadisguiser/vbmeta.conf`. <br><br><br>
-默认情况下，AVB 版本会被设定为 `2.0`，而 VBMeta 分区的大小值会被设定为 `4096`，加密状态会被设定为 `encrypted`，你可以自行在`/data/adb/vbmetadisguiser/vbmeta.conf`设定 AVB 的版本号、ROM的 vbmeta 分区的大小和加密状态为 `unencrypted` 或 `unsupported`。<br>
-AVB version will be set as `2.0` by default, the size of VBMeta partition will be set as `4096` by default, you can set the details in `/data/adb/vbmetadisguiser/vbmeta.conf`.
-
+<br>
+请在 密钥验证 / Native Detector 中获取 Boot Hash 并将其保存到 `/data/adb/vbmetadisguiser/vbmeta.conf` 。<br>
+Please obtain the Boot Hash in **Key Attestation/Native Detector** and save it to the file `/data/adb/vbmetadisguiser/vbmeta.conf`. <br><br>
+默认情况下，AVB 版本会被设定为 `2.0`，而 VBMeta 分区的大小值会被设定为 `4096`，加密状态会被设定为 `encrypted`。<br>
+你可以自行在`/data/adb/vbmetadisguiser/vbmeta.conf`设定 AVB 的版本号、ROM的 vbmeta 分区的大小和加密状态为 `unencrypted` 或 `unsupported`。<br>
+About these props: AVB version will be set as `2.0` by default, the size of VBMeta partition will be set as `4096` by default, the encryption status will be set as `encrypted` by default.<br>
+You can set the details in `/data/adb/vbmetadisguiser/vbmeta.conf` included AVB version, the size of VBMeta partition and the encryption status (`encrypted`,`unencrypted` or `unsupported`)<br>
 
 <details open>
 <summary>注意 / NOTICE</summary>
