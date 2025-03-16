@@ -31,8 +31,8 @@ config_loader() {
 
 . "$MODDIR/aautilities.sh"
 
-module_intro >> "$LOG_FILE"
 init_logowl "$LOG_DIR"
+module_intro >> "$LOG_FILE"
 logowl "Starting service.sh"
 config_loader >> "$LOG_FILE"
 print_line >> "$LOG_FILE"
