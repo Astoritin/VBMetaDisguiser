@@ -85,8 +85,9 @@ init_logowl() {
       }
       logowl "Created $LOG_DIR"
   else
-      logowl "Detect log dir: $LOG_DIR existed"
+      logowl "$LOG_DIR already exists"
   fi
+  logowl "Logowl initialized"
 }
 
 logowl() {
@@ -139,7 +140,6 @@ logowl() {
     fi
 }
 
-
 init_variables() {
     # init_variables: a function to initiate variables
     # key: the key name
@@ -150,28 +150,51 @@ init_variables() {
     local value
 
     if [[ ! -f "$config_file" ]]; then
-        logowl "Configuration file $config_file does not exist." "ERROR" >&2
+        logowl "Configuration file $config_file does NOT exist" "ERROR" >&2
         return 1
     fi
 
     # Fetch the value from config file
     value=$(sed -n "s/^$key=\(.*\)/\1/p" "$config_file" | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
   
+    if check_value_safety "$key" "$value"; then
+        echo "$value"
+        return 0
+    else
+        local result=$?
+        return "$result"
+    fi
+
+}
+
+check_value_safety(){
+    # check_value_safety: a function to check the safety of value
+    local key="$1"
+    local value="$2"
+
     # Escape the value to safe one
     value=$(printf "%s" "$value" | sed 's/'\''/'\\\\'\'''\''/g' | sed 's/[$;&|<>`"()]/\\&/g')
 
-    # Check whether the value is null or not
+    # Check if the value is null
     if [[ -z "$value" ]]; then
-        logowl "Key '$key' is NOT found in $config_file" "WARN" >&2
+        logowl "Detect empty value, status code: 1" "WARN"
+        return 1
+    fi
+
+    # If the value is start with "#", then take this line as comment line
+    if [ "${value:0:1}" = "#" ]; then
+        logowl "Detect comment symbol, status code: 2" "WARN"
         return 2
     fi
 
     # Special handling for boolean values
     if [[ "$value" == "true" || "$value" == "false" ]]; then
-        # logowl "Verified boolean: $value" "TIPS"
-        echo "$value"
+        logowl "Verified $key=$value (boolean)" "TIPS"
         return 0
     fi
+
+    # fetch the main content before symbol "#"
+    value=$(echo "$value" | cut -d'#' -f1 | xargs)
 
     # regex: the regular expression to match the safe variable
     local regex='^[a-zA-Z0-9/_\. -]*$'
@@ -179,16 +202,16 @@ init_variables() {
 
     # Check for dangerous characters
     if echo "$value" | grep -Eq "$dangerous_chars"; then
-        logowl "Detect $key contains potential dangerous characters" "ERROR"
+        logowl "Key '$key' contains potential dangerous characters" "ERROR" >&2
         return 3
-    elif ! echo "$value" | grep -Eq "$regex"; then
-        local result_of_verify=$(echo "$value" | grep -Eq "$regex")
-        logowl "Detect $key contains illegal characters, current regex: $regex, current value: $value, current result: $result_of_verify" "WARN"
+    fi
+    if ! echo "$value" | grep -Eq "$regex"; then
+        logowl "Key '$key' contains illegal characters" "WARN" >&2
         return 4
     fi
 
-    # logowl "Verified the value of $key: $value" "TIPS"
-    echo "$value"
+    # If all checks pass
+    logowl "Verified $key=$value" "TIPS"
     return 0
 }
 
@@ -270,14 +293,14 @@ show_system_info() {
     swap_total=$(echo "$mem_info" | awk '/Swap/ {print $2}')
     swap_used=$(echo "$mem_info" | awk '/Swap/ {print $3}')
     swap_free=$(echo "$mem_info" | awk '/Swap/ {print $4}')
-    logowl "RAM Space: ${ram_total}MB  Used:${ram_used}MB  Free:${ram_free}MB"
-    logowl "SWAP Space: ${swap_total}MB  Used:${swap_used}MB  Free:${swap_free}MB"
+    logowl "RAM: ${ram_total}MB  Used:${ram_used}MB  Free:${ram_free}MB"
+    logowl "SWAP: ${swap_total}MB  Used:${swap_used}MB  Free:${swap_free}MB"
 }
 
 print_line() {
     # print_line: a function to print separate line
     
-    local length=${1:-60}
+    local length=${1:-50}
     local line=$(printf "%-${length}s" | tr ' ' '-')
     echo "$line"
 }
@@ -290,7 +313,7 @@ file_compare() {
     local file_a="$1"
     local file_b="$2"
     if [ -z "$file_a" ] || [ -z "$file_b" ]; then
-      logowl "Value a or value b does not exist!" "WARN"
+      logowl "Value a or value b does NOT exist!" "WARN"
       return 2
     fi
     if [ ! -f "$file_a" ]; then
@@ -316,19 +339,11 @@ file_compare() {
 
 abort_verify() {
     # abort_verify: a function to abort verify because of detecting hash does NOT match
-
     print_line
-    echo "! $1"
-    echo "! This zip may be corrupted or have been maliciously modified!"
-    echo "! Please try to download again or get it from official source!"
-    print_line
-
-    # BOOTMODE is provided by Magisk / KernelSU / APatch
-    # It is true only if in Magisk manager / KernelSU env / APatch env
-    if [ "$BOOTMODE" ]; then
-        abort
-    fi
-    return 1
+    logowl "$1" "WARN"
+    logowl "This zip may be corrupted or have been maliciously modified!" "WARN"
+    logowl "Please try to download again or get it from official source!" "WARN"
+    abort "**************************************************"
 }
 
 extract() {
@@ -361,11 +376,11 @@ extract() {
     fi
 
     unzip $opts "$zip" "$file" -d "$dir" >&2
-    [ -f "$file_path" ] || abort_verify "$file does not exist!"
+    [ -f "$file_path" ] || abort_verify "$file does NOT exist!"
     logowl "Extract $file -> $file_path" >&1
 
     unzip $opts "$zip" "$file.sha256" -d "$VERIFY_DIR" >&2
-    [ -f "$hash_path" ] || abort_verify "$file.sha256 does not exist!"
+    [ -f "$hash_path" ] || abort_verify "$file.sha256 does NOT exist!"
 
     expected_hash="$(cat "$hash_path")"
     calculated_hash="$(sha256sum "$file_path" | cut -d ' ' -f1)"
@@ -374,6 +389,7 @@ extract() {
       logowl "Verified $file" >&1
     else
       abort_verify "Failed to verify $file"
+      rm -rf "$VERIFY_DIR"
     fi
 }
 
