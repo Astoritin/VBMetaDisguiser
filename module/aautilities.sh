@@ -1,5 +1,59 @@
-VERIFY_DIR="$TMPDIR/.aa_bs_verify"
-mkdir "$VERIFY_DIR"
+if ! command -v abort >/dev/null 2>&1; then
+    logowl "Detect abort does NOT available!" "WARN"
+    abort() {
+        echo "[!] $1"
+        exit 1
+    }
+fi
+
+is_kernelsu() {
+    if [ -n "$KSU" ]; then
+        logowl "Install from KernelSU"
+        logowl "KernelSU version: $KSU_KERNEL_VER_CODE (kernel) + $KSU_VER_CODE (ksud)"
+        ROOT_SOL="KernelSU (kernel:$KSU_KERNEL_VER_CODE, ksud:$KSU_VER_CODE)"
+        if [ -n "$(which magisk)" ]; then
+            logowl "Detect multiple Root implements!" "WARN"
+            ROOT_SOL="Multiple"
+        fi
+        return 0
+    fi
+    return 1
+}
+
+is_apatch() {
+    if [ -n "$APATCH" ]; then
+        logowl "Install from APatch"
+        logowl "APatch version: $APATCH_VER_CODE"
+        ROOT_SOL="APatch ($APATCH_VER_CODE)"
+        return 0
+    fi
+    return 1
+}
+
+is_magisk() {
+    if [ -n "$MAGISK_VER_CODE" ] || [ -n "$(magisk -v || magisk -V)" ]; then
+        MAGISK_V_VER_NAME="$(magisk -v)"
+        MAGISK_V_VER_CODE="$(magisk -V)"
+        case "$MAGISK_VER $MAGISK_V_VER_NAME" in
+            *"-alpha"*) MAGISK_BRANCH_NAME="Magisk Alpha" ;;
+            *"-lite"*)  MAGISK_BRANCH_NAME="Magisk Lite" ;;
+            *"-kitsune"*) MAGISK_BRANCH_NAME="Kitsune Mask" ;;
+            *"-delta"*) MAGISK_BRANCH_NAME="Magisk Delta" ;;
+            *) MAGISK_BRANCH_NAME="Magisk" ;;
+        esac
+        ROOT_SOL="$MAGISK_BRANCH_NAME (${MAGISK_VER_CODE:-$MAGISK_V_VER_CODE})"
+        logowl "Installing from $ROOT_SOL"
+        return 0
+    fi
+    return 1
+}
+
+is_recovery() {
+    ROOT_SOL="Recovery"
+    logowl "Install module in Recovery mode is not supported, especially for KernelSU / APatch!" "FATAL"
+    logowl "Please install this module in Magisk / KernelSU / APatch APP!" "FATAL"
+    abort
+}
 
 install_env_check() {
     # install_env_check: a function to check the current root solution
@@ -9,44 +63,11 @@ install_env_check() {
     MAGISK_BRANCH_NAME="Official"
     ROOT_SOL="Magisk"
 
-    # Check each variables can represent the Root Solution
-    if [[ "$KSU" ]]; then
-      logowl "Install from KernelSU"
-      logowl "KernelSU version: $KSU_KERNEL_VER_CODE (kernel) + $KSU_VER_CODE (ksud)"
-      ROOT_SOL="KernelSU (kernel:$KSU_KERNEL_VER_CODE, ksud:$KSU_VER_CODE)"
-      if [[ "$(which magisk)" ]]; then
-        logowl "Detect multiple Root implements!" "WARN"
-        ROOT_SOL="Multiple"
-      fi
-    elif [[ "$APATCH" ]]; then
-      logowl "Install from APatch"
-      logowl "APatch version: $APATCH_VER_CODE"
-      ROOT_SOL="APatch ($APATCH_VER_CODE)"
-    elif [[ "$MAGISK_VER_CODE" || -n "$(magisk -v || magisk -V)" ]]; then
-      MAGISK_V_VER_NAME="$(magisk -v)"
-      MAGISK_V_VER_CODE="$(magisk -V)"
-      if [[ "$MAGISK_VER" == *"-alpha"* || "$MAGISK_V_VER_NAME" == *"-alpha"* ]]; then
-        MAGISK_BRANCH_NAME="Magisk Alpha"
-      elif [[ "$MAGISK_VER" == *"-lite"* || "$MAGISK_V_VER_NAME" == *"-lite"* ]]; then
-        MAGISK_BRANCH_NAME="Magisk Lite"
-      elif [[ "$MAGISK_VER" == *"-kitsune"* || "$MAGISK_V_VER_NAME" == *"-kitsune"* ]]; then
-        MAGISK_BRANCH_NAME="Kitsune Mask"
-      elif [[ "$MAGISK_VER" == *"-delta"* || "$MAGISK_V_VER_NAME" == *"-delta"* ]]; then
-        MAGISK_BRANCH_NAME="Magisk Delta"
-      else
-        MAGISK_BRANCH_NAME="Magisk"
-      fi
-      ROOT_SOL="$MAGISK_BRANCH_NAME (${MAGISK_VER_CODE:-$MAGISK_V_VER_CODE})"
-      logowl "Installing from $ROOT_SOL"
-    else
-      ROOT_SOL="Recovery"
-      print_line
-      logowl "Install module in Recovery mode is not support especially for KernelSU / APatch!" "FATAL"
-      logowl "Please install this module in Magisk / KernelSU / APatch APP!" "FATAL"
-      print_line
-      abort
+    if ! is_kernelsu && ! is_apatch && ! is_magisk; then
+        is_recovery
     fi
 }
+
 
 module_intro() {
     # module_intro: a function to show module basic info
@@ -71,7 +92,7 @@ init_logowl() {
     # init_logowl: a function to initiate the log directory
     # to make sure the log directory exist
 
-    local LOG_DIR="$1"
+    LOG_DIR="$1"
     if [ -z "$LOG_DIR" ]; then
       logowl "LOG_DIR is not provided!" "ERROR"
       return 1
@@ -94,50 +115,45 @@ logowl() {
     # logowl: a function to format the log output
     # LOG_MSG: the log message you need to print
     # LOG_LEVEL: the level of this log message
-    local LOG_MSG="$1"
-    local LOG_LEVEL="${2-:DEF}"
+    LOG_MSG="$1"
+    LOG_LEVEL="${2:-DEF}"
 
     if [ -z "$LOG_MSG" ]; then
         echo "! LOG_MSG is not provided yet!"
-        return 3
+        return 1
     fi
 
     case "$LOG_LEVEL" in
-        "TIPS")
-        LOG_LEVEL="*"
-        ;;
-        "WARN")
-        LOG_LEVEL="- Warn:"
-        ;;
-        "ERROR")
-        LOG_LEVEL="! ERROR:"
-        ;;
-        "FATAL")
-        LOG_LEVEL="× FATAL:"
-        ;;
-        "NONE")
-        LOG_LEVEL=" "
-        ;;
-        *)
-        LOG_LEVEL="-"
-        ;;
+        "TIPS") LOG_LEVEL="*" ;;
+        "WARN") LOG_LEVEL="- Warn:" ;;
+        "ERROR") LOG_LEVEL="! ERROR:" ;;
+        "FATAL") LOG_LEVEL="× FATAL:" ;;
+        "NONE") LOG_LEVEL=" " ;;
+        *) LOG_LEVEL="-" ;;
     esac
 
     if [ -z "$LOG_FILE" ]; then
-        if [ "$BOOTMODE" ]; then
+        if command -v ui_print >/dev/null 2>&1 && [ "$BOOTMODE" ]; then
             ui_print "$LOG_LEVEL $LOG_MSG" 2>/dev/null
-            return 0
+        else
+            echo "$LOG_LEVEL $LOG_MSG"
         fi
-        echo "$LOG_LEVEL $LOG_MSG"
     else
-        if [[ "$LOG_LEVEL" == "! ERROR:" ]] || [[ "$LOG_LEVEL" == "× FATAL:" ]]; then
-        print_line >> "$LOG_FILE"
+        if [ "$LOG_LEVEL" = "! ERROR:" ] || [ "$LOG_LEVEL" = "× FATAL:" ]; then
+            print_line >> "$LOG_FILE"
         fi
         echo "$LOG_LEVEL $LOG_MSG" >> "$LOG_FILE"
-        if [[ "$LOG_LEVEL" == "! ERROR:" ]] || [[ "$LOG_LEVEL" == "× FATAL:" ]]; then
-        print_line >> "$LOG_FILE"
+        if [ "$LOG_LEVEL" = "! ERROR:" ] || [ "$LOG_LEVEL" = "× FATAL:" ]; then
+            print_line >> "$LOG_FILE"
         fi
     fi
+}
+
+print_line() {
+    # print_line: a function to print separate line
+    length=${1:-50}
+    line=$(printf "%-${length}s" | tr ' ' '-')
+    echo "$line"
 }
 
 init_variables() {
@@ -145,11 +161,11 @@ init_variables() {
     # key: the key name
     # config_file: the path and filename of the key it located
     # value: the value of the key
-    local key="$1"
-    local config_file="$2"
-    local value
+    key="$1"
+    config_file="$2"
+    value
 
-    if [[ ! -f "$config_file" ]]; then
+    if [ ! -f "$config_file" ]; then
         logowl "Configuration file $config_file does NOT exist" "ERROR" >&2
         return 1
     fi
@@ -161,7 +177,7 @@ init_variables() {
         echo "$value"
         return 0
     else
-        local result=$?
+        result=$?
         return "$result"
     fi
 
@@ -169,14 +185,11 @@ init_variables() {
 
 check_value_safety(){
     # check_value_safety: a function to check the safety of value
-    local key="$1"
-    local value="$2"
-
-    # Escape the value to safe one
-    value=$(printf "%s" "$value" | sed 's/'\''/'\\\\'\'''\''/g' | sed 's/[$;&|<>`"()]/\\&/g')
+    key="$1"
+    value="$2"
 
     # Check if the value is null
-    if [[ -z "$value" ]]; then
+    if [ -z "$value" ]; then
         logowl "Detect empty value, status code: 1" "WARN"
         return 1
     fi
@@ -188,17 +201,20 @@ check_value_safety(){
     fi
 
     # Special handling for boolean values
-    if [[ "$value" == "true" || "$value" == "false" ]]; then
+    if [ "$value" = "true" ] || [ "$value" = "false" ]; then
         logowl "Verified $key=$value (boolean)" "TIPS"
         return 0
     fi
+
+    # Escape the value to safe one
+    value=$(printf "%s" "$value" | sed 's/'\''/'\\\\'\'''\''/g' | sed 's/[$;&|<>`"()]/\\&/g')
 
     # fetch the main content before symbol "#"
     value=$(echo "$value" | cut -d'#' -f1 | xargs)
 
     # regex: the regular expression to match the safe variable
-    local regex='^[a-zA-Z0-9/_\. -]*$'
-    local dangerous_chars='[`$();|<>]'
+    regex='^[a-zA-Z0-9/_\. -]*$'
+    dangerous_chars='[`$();|<>]'
 
     # Check for dangerous characters
     if echo "$value" | grep -Eq "$dangerous_chars"; then
@@ -223,11 +239,11 @@ verify_variables() {
     # default_value (optional): if the ordered value is unavailable, the value should be set as default
     # script_var_name: the name of the variable in uppercase for exporting
   
-    local config_var_name="$1"
-    local config_var_value="$2"
-    local validation_pattern="$3"
-    local default_value="${4:-}"
-    local script_var_name=$(echo "$config_var_name" | tr '[:lower:]' '[:upper:]')
+    config_var_name="$1"
+    config_var_value="$2"
+    validation_pattern="$3"
+    default_value="${4:-}"
+    script_var_name=$(echo "$config_var_name" | tr '[:lower:]' '[:upper:]')
 
     if [ -n "$config_var_value" ] && echo "$config_var_value" | grep -qE "$validation_pattern"; then
         export "$script_var_name"="$config_var_value"
@@ -257,8 +273,8 @@ update_module_description() {
     # DESCRIPTION: the description you want to update to
     # MODULE_PROP: the path of module.prop you want to update the description
 
-    local DESCRIPTION="$1"
-    local MODULE_PROP="$2"
+    DESCRIPTION="$1"
+    MODULE_PROP="$2"
     if [ -z "$DESCRIPTION" ] || [ -z "$MODULE_PROP" ]; then
       logowl "DESCRIPTION or MODULE_PROP is not provided yet!" "ERROR"
       return 3
@@ -271,13 +287,14 @@ debug_print_values() {
     # debug_print_values: print the environment info and variables during this script running
 
     print_line
-    logowl "Environment Info"
+    logowl "All Environment Variables"
     print_line
     env | sed 's/^/- /'
     print_line
-    logowl "Specific Info"
+
+    logowl "All Shell Variables"
     print_line
-    set | grep '^[^=]*=' | sed 's/^/- /'
+    ( set -o posix; set ) | sed 's/^/- /'
     print_line
 }
 
@@ -285,7 +302,7 @@ show_system_info() {
     # show_system_info: to show the Device, Android and RAM info.
 
     logowl "Device: $(getprop ro.product.brand) $(getprop ro.product.model) ($(getprop ro.product.device))"
-    logowl "Android $(getprop ro.build.version.release) (API $API), $ARCH"
+    logowl "OS: Android $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk)), $(getprop ro.product.cpu.abi | cut -d '-' -f1)"
     mem_info=$(free -m)
     ram_total=$(echo "$mem_info" | awk '/Mem/ {print $2}')
     ram_used=$(echo "$mem_info" | awk '/Mem/ {print $3}')
@@ -297,21 +314,14 @@ show_system_info() {
     logowl "SWAP: ${swap_total}MB  Used:${swap_used}MB  Free:${swap_free}MB"
 }
 
-print_line() {
-    # print_line: a function to print separate line
-    
-    local length=${1:-50}
-    local line=$(printf "%-${length}s" | tr ' ' '-')
-    echo "$line"
-}
 
 file_compare() {
     # file_compare: a function to compare whether file a and file b is same or not
     # file_a: the path of file a
     # file_b: the path of file b
 
-    local file_a="$1"
-    local file_b="$2"
+    file_a="$1"
+    file_b="$2"
     if [ -z "$file_a" ] || [ -z "$file_b" ]; then
       logowl "Value a or value b does NOT exist!" "WARN"
       return 2
@@ -324,8 +334,8 @@ file_compare() {
       logowl "b is NOT a file!" "WARN"
       return 3
     fi
-    local hash_file_a=$(sha256sum "$file_a" | awk '{print $1}')
-    local hash_file_b=$(sha256sum "$file_b" | awk '{print $1}')
+    hash_file_a=$(sha256sum "$file_a" | awk '{print $1}')
+    hash_file_b=$(sha256sum "$file_b" | awk '{print $1}')
     # logowl "File a: $hash_file_a"
     # logowl "File b: $hash_file_b"
     if [ "$hash_file_a" == "$hash_file_b" ]; then
@@ -339,6 +349,8 @@ file_compare() {
 
 abort_verify() {
     # abort_verify: a function to abort verify because of detecting hash does NOT match
+
+    rm -rf "$VERIFY_DIR"
     print_line
     logowl "$1" "WARN"
     logowl "This zip may be corrupted or have been maliciously modified!" "WARN"
@@ -360,8 +372,7 @@ extract() {
     zip=$1
     file=$2
     dir=$3
-    junk_paths=$4
-    [ -z "$junk_paths" ] && junk_paths=false
+    junk_paths=${4:-false}
     opts="-o"
     [ $junk_paths = true ] && opts="-oj"
 
@@ -406,8 +417,8 @@ clean_old_logs() {
     # log_dir: the log directory you want to clean
     # files_max: the max value of files you allow to keep in logs dir
  
-    local log_dir="$1"
-    local files_max="$2"
+    log_dir="$1"
+    files_max="$2"
     
     if [ -z "$log_dir" ] || [ ! -d "$log_dir" ]; then
         logowl "$log_dir is not found or is not a directory!" "ERROR"
