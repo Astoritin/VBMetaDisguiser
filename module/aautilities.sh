@@ -338,7 +338,7 @@ file_compare() {
     hash_file_b=$(sha256sum "$file_b" | awk '{print $1}')
     # logowl "File a: $hash_file_a"
     # logowl "File b: $hash_file_b"
-    if [ "$hash_file_a" = "$hash_file_b" ]; then
+    if [ "$hash_file_a" == "$hash_file_b" ]; then
         # logowl "The hash of file a is equal to file b, they are the same files!"
         return 0
     else
@@ -396,7 +396,7 @@ extract() {
     expected_hash="$(cat "$hash_path")"
     calculated_hash="$(sha256sum "$file_path" | cut -d ' ' -f1)"
 
-    if [ "$expected_hash" = "$calculated_hash" ]; then
+    if [ "$expected_hash" == "$calculated_hash" ]; then
       logowl "Verified $file" >&1
     else
       abort_verify "Failed to verify $file"
