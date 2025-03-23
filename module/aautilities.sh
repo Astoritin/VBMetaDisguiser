@@ -72,7 +72,7 @@ install_env_check() {
 module_intro() {
     # module_intro: a function to show module basic info
 
-    MODULE_PROP="${MODDIR}/module.prop"
+    MODULE_PROP="$MODDIR/module.prop"
     MOD_NAME="$(sed -n 's/^name=\(.*\)/\1/p' "$MODULE_PROP")"
     MOD_AUTHOR="$(sed -n 's/^author=\(.*\)/\1/p' "$MODULE_PROP")"
     MOD_VER="$(sed -n 's/^version=\(.*\)/\1/p' "$MODULE_PROP") ($(sed -n 's/^versionCode=\(.*\)/\1/p' "$MODULE_PROP"))"
@@ -116,7 +116,7 @@ logowl() {
     # LOG_MSG: the log message you need to print
     # LOG_LEVEL: the level of this log message
     LOG_MSG="$1"
-    LOG_LEVEL="${2:-DEF}"
+    LOG_LEVEL="$2"
 
     if [ -z "$LOG_MSG" ]; then
         echo "! LOG_MSG is not provided yet!"
@@ -129,22 +129,29 @@ logowl() {
         "ERROR") LOG_LEVEL="! ERROR:" ;;
         "FATAL") LOG_LEVEL="× FATAL:" ;;
         "NONE") LOG_LEVEL=" " ;;
+        "VANILLA") LOG_LEVEL="V" ;;
         *) LOG_LEVEL="-" ;;
     esac
 
-    if [ -z "$LOG_FILE" ]; then
-        if command -v ui_print >/dev/null 2>&1 && [ "$BOOTMODE" ]; then
-            ui_print "$LOG_LEVEL $LOG_MSG" 2>/dev/null
+    if [ -n "$LOG_FILE" ]; then
+        if [ "$LOG_LEVEL" = "! ERROR:" ] || [ "$LOG_LEVEL" = "× FATAL:" ]; then
+            print_line "$LOG_FILE"
+            echo "$LOG_LEVEL $LOG_MSG" >> "$LOG_FILE"
+            print_line "$LOG_FILE"
+        elif [ "$LOG_LEVEL" = "V" ]; then
+            echo "$LOG_MSG" >> "$LOG_FILE"
         else
-            echo "$LOG_LEVEL $LOG_MSG"
+            echo "$LOG_LEVEL $LOG_MSG" >> "$LOG_FILE"
         fi
     else
-        if [ "$LOG_LEVEL" = "! ERROR:" ] || [ "$LOG_LEVEL" = "× FATAL:" ]; then
-            print_line >> "$LOG_FILE"
-        fi
-        echo "$LOG_LEVEL $LOG_MSG" >> "$LOG_FILE"
-        if [ "$LOG_LEVEL" = "! ERROR:" ] || [ "$LOG_LEVEL" = "× FATAL:" ]; then
-            print_line >> "$LOG_FILE"
+        if command -v ui_print >/dev/null 2>&1 && [ "$BOOTMODE" ]; then
+            if [ "$LOG_LEVEL" = "V" ]; then
+                ui_print "$LOG_MSG"
+            else
+                ui_print "$LOG_LEVEL $LOG_MSG"
+            fi
+        else
+            echo "$LOG_LEVEL $LOG_MSG"
         fi
     fi
 }
@@ -152,8 +159,9 @@ logowl() {
 print_line() {
     # print_line: a function to print separate line
     length=${1:-50}
+
     line=$(printf "%-${length}s" | tr ' ' '-')
-    echo "$line"
+    logowl "$line" "VANILLA"
 }
 
 init_variables() {
@@ -163,7 +171,6 @@ init_variables() {
     # value: the value of the key
     key="$1"
     config_file="$2"
-    value
 
     if [ ! -f "$config_file" ]; then
         logowl "Configuration file $config_file does NOT exist" "ERROR" >&2
@@ -190,15 +197,12 @@ check_value_safety(){
 
     # Check if the value is null
     if [ -z "$value" ]; then
-        logowl "Detect empty value, status code: 1" "WARN"
+        logowl "Detect empty value (code: 1)" "WARN"
         return 1
     fi
 
-    # If the value is start with "#", then take this line as comment line
-    if [ "${value:0:1}" = "#" ]; then
-        logowl "Detect comment symbol, status code: 2" "WARN"
-        return 2
-    fi
+    # Escape the value to safe one
+    value=$(printf "%s" "$value" | sed 's/'\''/'\\\\'\'''\''/g' | sed 's/[$;&|<>`"()]/\\&/g')
 
     # Special handling for boolean values
     if [ "$value" = "true" ] || [ "$value" = "false" ]; then
@@ -206,8 +210,12 @@ check_value_safety(){
         return 0
     fi
 
-    # Escape the value to safe one
-    value=$(printf "%s" "$value" | sed 's/'\''/'\\\\'\'''\''/g' | sed 's/[$;&|<>`"()]/\\&/g')
+    # If the value is start with "#", then take this line as comment line
+    first_char=$(printf '%s' "$value" | cut -c1)
+    if [ "$first_char" = "#" ]; then
+        logowl "Detect comment symbol (code: 2)" "WARN"
+        return 2
+    fi
 
     # fetch the main content before symbol "#"
     value=$(echo "$value" | cut -d'#' -f1 | xargs)
@@ -402,14 +410,6 @@ extract() {
       abort_verify "Failed to verify $file"
       rm -rf "$VERIFY_DIR"
     fi
-}
-
-set_module_files_perm() {
-    # set_module_files_perm: set module files's permission
-    # only use in installing module
-
-    logowl "Setting permissions"
-    set_perm_recursive "$MODPATH" 0 0 0755 0644
 }
 
 clean_old_logs() {
