@@ -85,6 +85,7 @@ module_intro() {
     logowl "Version: $MOD_VER"
     logowl "Root solution: $ROOT_SOL"
     logowl "Current time stamp: $(date +"%Y-%m-%d %H:%M:%S")"
+    logowl "Current module dir: $MODDIR"
     print_line
 }
 
@@ -114,7 +115,7 @@ init_logowl() {
 logowl() {
     # logowl: a function to format the log output
     # LOG_MSG: the log message you need to print
-    # LOG_LEVEL: the level of this log message
+    # LOG_LEVEL (optional): the level of this log message
     LOG_MSG="$1"
     LOG_LEVEL="$2"
 
@@ -128,24 +129,28 @@ logowl() {
         "WARN") LOG_LEVEL="- Warn:" ;;
         "ERROR") LOG_LEVEL="! ERROR:" ;;
         "FATAL") LOG_LEVEL="× FATAL:" ;;
-        "NONE") LOG_LEVEL=" " ;;
-        "VANILLA") LOG_LEVEL="V" ;;
+        "SPACE") LOG_LEVEL=" " ;;
+        "NONE") LOG_LEVEL="_" ;;
         *) LOG_LEVEL="-" ;;
     esac
 
     if [ -n "$LOG_FILE" ]; then
         if [ "$LOG_LEVEL" = "! ERROR:" ] || [ "$LOG_LEVEL" = "× FATAL:" ]; then
-            print_line "$LOG_FILE"
+            echo "----------------------------------------------------" >> "$LOG_FILE"
             echo "$LOG_LEVEL $LOG_MSG" >> "$LOG_FILE"
-            print_line "$LOG_FILE"
-        elif [ "$LOG_LEVEL" = "V" ]; then
+            echo "----------------------------------------------------" >> "$LOG_FILE"
+        elif [ "$LOG_LEVEL" = "_" ]; then
             echo "$LOG_MSG" >> "$LOG_FILE"
         else
             echo "$LOG_LEVEL $LOG_MSG" >> "$LOG_FILE"
         fi
     else
         if command -v ui_print >/dev/null 2>&1 && [ "$BOOTMODE" ]; then
-            if [ "$LOG_LEVEL" = "V" ]; then
+            if [ "$LOG_LEVEL" = "! ERROR:" ] || [ "$LOG_LEVEL" = "× FATAL:" ]; then
+                ui_print "----------------------------------------------------"
+                ui_print "$LOG_LEVEL $LOG_MSG"
+                ui_print "----------------------------------------------------"
+            elif [ "$LOG_LEVEL" = "_" ]; then
                 ui_print "$LOG_MSG"
             else
                 ui_print "$LOG_LEVEL $LOG_MSG"
@@ -161,7 +166,7 @@ print_line() {
     length=${1:-50}
 
     line=$(printf "%-${length}s" | tr ' ' '-')
-    logowl "$line" "VANILLA"
+    logowl "$line" "NONE"
 }
 
 init_variables() {
@@ -179,7 +184,7 @@ init_variables() {
 
     # Fetch the value from config file
     value=$(sed -n "s/^$key=\(.*\)/\1/p" "$config_file" | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-  
+
     if check_value_safety "$key" "$value"; then
         echo "$value"
         return 0
