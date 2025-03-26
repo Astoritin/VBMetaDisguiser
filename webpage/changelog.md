@@ -10,7 +10,7 @@
 - Fix the problems of some logical loophole
 - 修复一些逻辑漏洞问题
 - Add action.sh as shortcut to open the config directory with root file managers
-- 新增 `action.sh` 以便于快捷用 `Root` 文件相关的管理器打开配置文件目录
+- 新增 `action.sh` 以便于快捷用 `Root` 相关的文件管理器打开配置文件目录
 
 ### 1.2.3
 
