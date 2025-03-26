@@ -39,6 +39,7 @@ extract "$ZIPFILE" 'customize.sh' "$VERIFY_DIR"
 logowl "Extract module files"
 extract "$ZIPFILE" 'aautilities.sh' "$MODPATH"
 extract "$ZIPFILE" 'module.prop' "$MODPATH"
+extract "$ZIPFILE" 'action.sh' "$MODPATH"
 extract "$ZIPFILE" 'service.sh' "$MODPATH"
 extract "$ZIPFILE" 'uninstall.sh' "$MODPATH"
 if [ ! -f "$CONFIG_DIR/vbmeta.conf" ]; then
