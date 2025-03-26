@@ -60,22 +60,22 @@ encryption_disguiser(){
 init_logowl "$LOG_DIR"
 module_intro >> "$LOG_FILE"
 show_system_info
-print_line >> "$LOG_FILE"
+print_line
 logowl "Starting service.sh"
-print_line >> "$LOG_FILE"
+print_line
 config_loader
 vbmeta_disguiser
 encryption_disguiser
-print_line >> "$LOG_FILE"
+print_line
 logowl "Specific variables"
-print_line >> "$LOG_FILE"
-logowl "ro.boot.vbmeta.device_state=$(getprop ro.boot.vbmeta.device_state)"
-logowl "ro.boot.vbmeta.avb_version=$(getprop ro.boot.vbmeta.avb_version)"
-logowl "ro.boot.vbmeta.hash_alg=$(getprop ro.boot.vbmeta.hash_alg)"
-logowl "ro.boot.vbmeta.size=$(getprop ro.boot.vbmeta.size)"
-logowl "ro.boot.vbmeta.digest=$(getprop ro.boot.vbmeta.digest)"
-logowl "ro.crypto.state=$(getprop ro.crypto.state)"
-print_line >> "$LOG_FILE"
+print_line
+logowl "ro.boot.vbmeta.device_state=$(getprop ro.boot.vbmeta.device_state)" "SPACE"
+logowl "ro.boot.vbmeta.avb_version=$(getprop ro.boot.vbmeta.avb_version)" "SPACE"
+logowl "ro.boot.vbmeta.hash_alg=$(getprop ro.boot.vbmeta.hash_alg)" "SPACE"
+logowl "ro.boot.vbmeta.size=$(getprop ro.boot.vbmeta.size)" "SPACE"
+logowl "ro.boot.vbmeta.digest=$(getprop ro.boot.vbmeta.digest)" "SPACE"
+logowl "ro.crypto.state=$(getprop ro.crypto.state)" "SPACE"
+print_line
 logowl "Variables before case closed"
 debug_print_values >> "$LOG_FILE"
 logowl "service.sh case closed!"
