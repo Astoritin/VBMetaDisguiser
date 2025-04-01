@@ -16,9 +16,6 @@ AVB_VERSION="2.0"
 VBMETA_SIZE="4096"
 BOOT_HASH="00000000000000000000000000000000"
 
-VBMETA_DISGUISE_STATUS=false
-ENCRYPTION_DISGUISE_STATUS=false
-
 debug_props_info() {
 
     print_line
@@ -62,8 +59,6 @@ vbmeta_disguiser() {
         resetprop -n "ro.boot.vbmeta.avb_version" "$AVB_VERSION"
     fi
 
-    VBMETA_DISGUISE_STATUS=true
-
 }
 
 encryption_disguiser(){
@@ -72,8 +67,6 @@ encryption_disguiser(){
         resetprop -n "ro.crypto.state" "$CRYPTO_STATE"
     fi
 
-    ENCRYPTION_DISGUISE_STATUS=true
-
 }
 
 module_status_update() {
@@ -81,23 +74,8 @@ module_status_update() {
 
     logowl "Updating module status"
 
-    OLD_DESC=$(sed -n 's/^description=//p' "$MODULE_PROP")
-
-    if [ "$VBMETA_DISGUISE_STATUS" = "true" ]; then
-        APPEND_DESC_VBMETA="✅VBMeta status disguised."
-    else
-        APPEND_DESC_VBMETA="❌VBMeta status NOT disguise yet!"
-    fi
-
-    if [ "$ENCRYPTION_DISGUISE_STATUS" = "true" ]; then
-        APPEND_DESC_ENCRYPTION="✅Encryption status disguised."
-    else
-        APPEND_DESC_ENCRYPTION="❌Encryption status NOT disguise yet!"
-    fi
-
-    APPEND_DESC="${APPEND_DESC_VBMETA} ${APPEND_DESC_ENCRYPTION}"
-    NEW_DESC=$(echo "$OLD_DESC" | sed "s/\[\([^]]*\)\./\[\1.${APPEND_DESC}/")
-    update_module_description "$NEW_DESC" "$MODULE_PROP"
+    DESCRIPTION="[😋Enabled. ✅Current AVB version: $(getprop ro.boot.vbmeta.avb_version), boot hash: $(getprop ro.boot.vbmeta.digest) ($(getprop ro.boot.vbmeta.hash_alg)), VBMeta partition size: $(getprop ro.boot.vbmeta.size), lock status: $(getprop ro.boot.vbmeta.device_state), data partition encryption status: $(getprop ro.crypto.state), Android security patch date: $(getprop ro.build.version.security_patch), vendor date: $(getprop ro.vendor.build.security_patch), boot patch date: $(getprop ro.system.build.security_patch) ⭐Root: $ROOT_SOL] A module to disguise the props of vbmeta and encryption status✨"
+    update_module_description "$DESCRIPTION" "$MODULE_PROP"
 
 }
 
