@@ -40,12 +40,14 @@ logowl "Extract module files"
 extract "$ZIPFILE" 'aautilities.sh' "$MODPATH"
 extract "$ZIPFILE" 'module.prop' "$MODPATH"
 extract "$ZIPFILE" 'action.sh' "$MODPATH"
+extract "$ZIPFILE" 'post-fs-data.sh' "$MODPATH"
 extract "$ZIPFILE" 'service.sh' "$MODPATH"
 extract "$ZIPFILE" 'uninstall.sh' "$MODPATH"
 if [ ! -f "$CONFIG_DIR/vbmeta.conf" ]; then
     logowl "vbmeta.conf does NOT exist"
     extract "$ZIPFILE" 'vbmeta.conf' "$TMPDIR"
     mv "$TMPDIR/vbmeta.conf" "$CONFIG_DIR/vbmeta.conf" || abort "! Failed to create vbmeta.conf!"
+    
 else
     logowl "Detect vbmeta.conf already exists"
     logowl "Skip overwriting vbmeta.conf"
