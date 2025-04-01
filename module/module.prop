@@ -1,7 +1,7 @@
 id=vbmetadisguiser
 name=VBMeta Disguiser
-version=v1.2.4
-versionCode=366
+version=v1.2.5
+versionCode=500
 author=Astoritin Ambrosius
 updateJson=https://raw.githubusercontent.com/Astoritin/VBMetaDisguiser/main/webpage/update.json
 description=A module to disguise the props of vbmeta and encryption status✨
