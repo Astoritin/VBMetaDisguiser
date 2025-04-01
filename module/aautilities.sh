@@ -1,18 +1,13 @@
-if ! command -v abort >/dev/null 2>&1; then
-    logowl "Detect abort does NOT available!" "WARN"
-    abort() {
-        echo "[!] $1"
-        exit 1
-    }
-fi
+#!/system/bin/sh
+MODDIR=${0%/*}
 
 is_kernelsu() {
     if [ -n "$KSU" ]; then
         logowl "Install from KernelSU"
         logowl "KernelSU version: $KSU_KERNEL_VER_CODE (kernel) + $KSU_VER_CODE (ksud)"
         ROOT_SOL="KernelSU (kernel:$KSU_KERNEL_VER_CODE, ksud:$KSU_VER_CODE)"
-        if [ -n "$(which magisk)" ]; then
-            logowl "Detect multiple Root implements!" "WARN"
+        if { type magisk; } || [ -n "$APATCH" ]; then
+            logowl "Detect multiple Root solutions!" "WARN"
             ROOT_SOL="Multiple"
         fi
         return 0
@@ -25,6 +20,10 @@ is_apatch() {
         logowl "Install from APatch"
         logowl "APatch version: $APATCH_VER_CODE"
         ROOT_SOL="APatch ($APATCH_VER_CODE)"
+        if { type magisk; } || [ -n "$KSU" ]; then
+            logowl "Detect multiple Root solutions!" "WARN"
+            ROOT_SOL="Multiple"
+        fi
         return 0
     fi
     return 1
@@ -43,6 +42,10 @@ is_magisk() {
         esac
         ROOT_SOL="$MAGISK_BRANCH_NAME (${MAGISK_VER_CODE:-$MAGISK_V_VER_CODE})"
         logowl "Installing from $ROOT_SOL"
+        if [ -n "$KSU" ] || [ -n "$APATCH" ]; then
+            logowl "Detect multiple Root solutions!" "WARN"
+            ROOT_SOL="Multiple"
+        fi
         return 0
     fi
     return 1
@@ -368,7 +371,7 @@ abort_verify() {
     logowl "$1" "WARN"
     logowl "This zip may be corrupted or have been maliciously modified!" "WARN"
     logowl "Please try to download again or get it from official source!" "WARN"
-    abort "**************************************************"
+    abort "This zip may be corrupted or have been maliciously modified!"
 }
 
 extract() {
