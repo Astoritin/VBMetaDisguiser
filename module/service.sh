@@ -71,11 +71,22 @@ encryption_disguiser(){
 
 module_status_update() {
     # module_status_update: a function to update module status according to the result in function vbmeta disguiser
+    
+    logowl "Updating module status..."
+    
+    vbmeta_version=$(getprop 'ro.boot.vbmeta.avb_version' 2>/dev/null)
+    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' 2>/dev/null)
+    vbmeta_hash_alg=$(getprop 'ro.boot.vbmeta.hash_alg' 2>/dev/null)
+    vbmeta_size=$(getprop 'ro.boot.vbmeta.size' 2>/dev/null)
+    device_state=$(getprop 'ro.boot.vbmeta.device_state' 2>/dev/null)
+    crypto_state=$(getprop 'ro.crypto.state' 2>/dev/null)
+    security_patch=$(getprop 'ro.build.version.security_patch' 2>/dev/null)
+    vendor_patch=$(getprop 'ro.vendor.build.security_patch' 2>/dev/null)
+    system_patch=$(getprop 'ro.system.build.security_patch' 2>/dev/null)
 
-    logowl "Updating module status"
-
-    DESCRIPTION="[😋Enabled. ✅Current AVB version: $(getprop ro.boot.vbmeta.avb_version), boot hash: $(getprop ro.boot.vbmeta.digest) ($(getprop ro.boot.vbmeta.hash_alg)), VBMeta partition size: $(getprop ro.boot.vbmeta.size), lock status: $(getprop ro.boot.vbmeta.device_state), data partition encryption status: $(getprop ro.crypto.state), Android security patch date: $(getprop ro.build.version.security_patch), vendor date: $(getprop ro.vendor.build.security_patch), boot patch date: $(getprop ro.system.build.security_patch) ⭐Root: $ROOT_SOL] A module to disguise the props of vbmeta and encryption status✨"
-    update_module_description "$DESCRIPTION" "$MODULE_PROP"
+    DESCRIPTION="[😋Enabled. ✅AVB version: ${vbmeta_version:-N/A}, boot hash: ${vbmeta_digest:-N/A} (${vbmeta_hash_alg:-N/A}), VBMeta size: ${vbmeta_size:-N/A}, lock status: ${device_state:-N/A}, encryption: ${crypto_state:-N/A}, security patches: $security_patch / $vendor_patch / $system_patch ⭐Root: $ROOT_SOL] A module to disguise the props of vbmeta and encryption status✨"
+    
+    update_module_description "$DESCRIPTION" "$MODULE_PROP" && logowl "Status updated: $DESCRIPTION"
 
 }
 
@@ -92,6 +103,7 @@ logowl "Before"
 debug_props_info
 vbmeta_disguiser
 encryption_disguiser
+module_status_update
 logowl " "
 print_line
 logowl "After"
