@@ -14,7 +14,6 @@ MOD_VER="$(sed -n 's/^version=\(.*\)/\1/p' "$MODULE_PROP") ($(sed -n 's/^version
 
 TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
 SECURITY_PATCH_DATE=""
-DISGUISE_STATUS=false
 
 debug_props_info() {
 
@@ -79,9 +78,6 @@ ts_sp_config_simple() {
         resetprop -n "ro.build.version.security_patch" "$PATCH_LEVEL"
         resetprop -n "ro.vendor.build.security_patch" "$PATCH_LEVEL"
         resetprop -n "ro.system.build.security_patch" "$PATCH_LEVEL"
-        DISGUISE_STATUS=true
-    else
-        DISGUISE_STATUS=false
     fi
 }
 
@@ -120,7 +116,6 @@ ts_sp_config_advanced() {
         resetprop -n "ro.build.version.security_patch" "$TS_ALL"
         resetprop -n "ro.vendor.build.security_patch" "$TS_ALL"
         resetprop -n "ro.system.build.security_patch" "$TS_ALL"
-        DISGUISE_STATUS=true
     else
         if [ -n "$TS_SYSTEM" ]; then
             resetprop -n "ro.build.version.security_patch" "$TS_SYSTEM"
@@ -141,7 +136,6 @@ ts_sp_config_advanced() {
         elif [ -n "$TS_VENDOR" ]; then
             resetprop -n "ro.vendor.build.security_patch" "$TS_VENDOR"
         fi
-        DISGUISE_STATUS=true
     fi
 
 }
@@ -171,20 +165,6 @@ security_patch_info_disguiser() {
     debug_props_info
 }
 
-module_status_update() {
-    # module_status_update: a function to update module status according to the result in function vbmeta disguiser
-
-    logowl "Updating module status"
-
-    if [ "$DISGUISE_STATUS" = "true" ]; then
-        DESCRIPTION="[😋Enabled. ✅Security patch date disguised. ⭐Root: $ROOT_SOL] A module to disguise the props of vbmeta and encryption status✨"
-    else
-        DESCRIPTION="[😋Enabled. ❎Security patch date NOT disguised yet. ⭐Root: $ROOT_SOL] A module to disguise the props of vbmeta and encryption status✨"
-    fi
-    update_module_description "$DESCRIPTION" "$MODULE_PROP"
-
-}
-
 . "$MODDIR/aautilities.sh"
 
 init_logowl "$LOG_DIR"
@@ -194,7 +174,6 @@ print_line
 logowl "Starting post-fs-data.sh"
 print_line
 security_patch_info_disguiser
-module_status_update
 print_line
 logowl "Variables before case closed"
 debug_print_values >> "$LOG_FILE"
