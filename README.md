@@ -1,15 +1,7 @@
 # VBMeta 伪装者 / VBMeta Disguiser
 
-一个用于伪装 VBMeta 属性和加密属性的 Magisk 模块
-/ A Magisk module to disguise VBMeta props and the encryption status
-
-<details>
-<summary>注意 / NOTICE</summary>
-该 Magisk 模块仅能在已解锁 Bootloader 的设备上使用，并且需要特定的 Root 模块管理器 (Magisk、KernelSU、APatch)。
-如果你没有 Root 甚至没有解锁 Bootloader，那么该 Magisk 模块无法在你的设备上工作。<br>
-This Magisk module required devices with unlocked BootLoader and specific Root Modules Manager (Magisk/KernelSU/APatch).
-This Magisk module WILL NOT be able to work if your device doesn't get root access or even unlock BootLoader.
-</details>
+一个用于伪装 VBMeta 属性、加密状态和系统安全补丁日期的 Magisk 模块
+/ A Magisk module to disguise the props of vbmeta, encryption status and security patch date
 
 ## 支持的 Root 方案 / Support Root Solution
 
