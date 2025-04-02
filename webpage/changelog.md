@@ -1,7 +1,17 @@
 ## VBMeta 伪装者 / VBMeta Disguiser
 
-一个用于伪装 VBMeta 属性和加密状态的 Magisk 模块
-/ A Magisk module to disguise VBMeta props and encryption status
+一个用于伪装 VBMeta 属性、加密状态和系统安全补丁日期的 Magisk 模块
+/ A Magisk module to disguise the props of vbmeta, encryption status and security patch date
+
+### 1.2.5
+
+- Support disguising the security patch date configuring in `/data/adb/tricky_store/security_patch.txt` from [TrickyStore](https://github.com/5ec1cff/TrickyStore)
+- 支持针对 [TrickyStore](https://github.com/5ec1cff/TrickyStore) 配置于 `/data/adb/tricky_store/security_patch.txt` 的安全补丁日期进行 resetprop
+- NOTICE: This module will disguise the props ONLY. If you want to disguise the result from TEE, you need to install TrickyStore and configure it in `/data/adb/tricky_store/security_patch.txt` first.
+- 注意：该模块仅伪装属性值。如果你需要伪装从TEE返回的结果，你需要安装 [TrickyStore](https://github.com/5ec1cff/TrickyStore) 并配置 `/data/adb/tricky_store/security_patch.txt`
+- update the module description
+- 更新模块描述
+- SHA256: `cf6152007b4b63cca1f35efdb9ce157e527662f5a31a19522c3313fe4266e90a`
 
 ### 1.2.4
 
