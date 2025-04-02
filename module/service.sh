@@ -12,6 +12,8 @@ MOD_NAME="$(sed -n 's/^name=\(.*\)/\1/p' "$MODULE_PROP")"
 MOD_AUTHOR="$(sed -n 's/^author=\(.*\)/\1/p' "$MODULE_PROP")"
 MOD_VER="$(sed -n 's/^version=\(.*\)/\1/p' "$MODULE_PROP") ($(sed -n 's/^versionCode=\(.*\)/\1/p' "$MODULE_PROP"))"
 
+TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
+
 AVB_VERSION="2.0"
 VBMETA_SIZE="4096"
 BOOT_HASH="00000000000000000000000000000000"
@@ -72,11 +74,11 @@ encryption_disguiser(){
 module_status_update() {
     # module_status_update: a function to update module status according to the result in function vbmeta disguiser
     
-    logowl "Updating module status..."
+    logowl "Updating module status"
     
     vbmeta_version=$(getprop 'ro.boot.vbmeta.avb_version' 2>/dev/null)
-    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' 2>/dev/null)
-    vbmeta_hash_alg=$(getprop 'ro.boot.vbmeta.hash_alg' 2>/dev/null)
+    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' 2>/dev/null | tr '[:lower:]' '[:upper:]')
+    vbmeta_hash_alg=$(getprop 'ro.boot.vbmeta.hash_alg' 2>/dev/null | tr '[:lower:]' '[:upper:]')
     vbmeta_size=$(getprop 'ro.boot.vbmeta.size' 2>/dev/null)
     device_state=$(getprop 'ro.boot.vbmeta.device_state' 2>/dev/null)
     crypto_state=$(getprop 'ro.crypto.state' 2>/dev/null)
@@ -84,9 +86,13 @@ module_status_update() {
     vendor_patch=$(getprop 'ro.vendor.build.security_patch' 2>/dev/null)
     system_patch=$(getprop 'ro.system.build.security_patch' 2>/dev/null)
 
-    DESCRIPTION="[😋Enabled. ✅AVB version: ${vbmeta_version:-N/A}, boot hash: ${vbmeta_digest:-N/A} (${vbmeta_hash_alg:-N/A}), VBMeta size: ${vbmeta_size:-N/A}, lock status: ${device_state:-N/A}, encryption: ${crypto_state:-N/A}, security patches: $security_patch / $vendor_patch / $system_patch ⭐Root: $ROOT_SOL] A module to disguise the props of vbmeta and encryption status✨"
+    DESCRIPTION="[✅AVB ${vbmeta_version:-N/A} ${device_state:-N/A}, VBMeta Hash: ${vbmeta_digest:-N/A} (${vbmeta_hash_alg:-N/A}), 🔒Data ${crypto_state:-N/A}, Security patch: ${security_patch:-N/A}] A module to disguise the props of vbmeta, encryption status and security patch date✨"
     
-    update_module_description "$DESCRIPTION" "$MODULE_PROP" && logowl "Status updated: $DESCRIPTION"
+    if [! -f "$TRICKY_STORE_CONFIG_FILE" ]; then
+        DESCRIPTION="[✅AVB ${vbmeta_version:-N/A} ${device_state:-N/A}, VBMeta Hash: ${vbmeta_digest:-N/A} (${vbmeta_hash_alg:-N/A}), 🔒Data ${crypto_state:-N/A}, 😐TrickyStore security patch config file does NOT existed!] A module to disguise the props of vbmeta, encryption status and security patch date✨"
+    fi
+
+    update_module_description "$DESCRIPTION" "$MODULE_PROP"
 
 }
 
@@ -108,6 +114,6 @@ logowl " "
 print_line
 logowl "After"
 debug_props_info
-# logowl "Variables before case closed"
-# debug_print_values >> "$LOG_FILE"
+logowl "Variables before case closed"
+debug_print_values >> "$LOG_FILE"
 logowl "service.sh case closed!"
