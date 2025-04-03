@@ -1,7 +1,7 @@
 # VBMeta 伪装者 / VBMeta Disguiser
 
-一个用于伪装 VBMeta 属性、加密状态和系统安全补丁日期的 Magisk 模块
-/ A Magisk module to disguise the props of vbmeta, encryption status and security patch date
+一个用于伪装 VBMeta 属性、系统安全补丁日期和加密状态的 Magisk 模块
+/ A Magisk module to disguise the props of vbmeta, security patch date and encryption status✨
 
 ## 支持的 Root 方案 / Support Root Solution
 
