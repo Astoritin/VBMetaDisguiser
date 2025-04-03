@@ -19,5 +19,6 @@
 你可以自行在`/data/adb/vbmetadisguiser/vbmeta.conf`设定 AVB 的版本号、ROM的 vbmeta 分区的大小和加密状态为 `unencrypted` 或 `unsupported`。
 
 ### 注意
+
 在 `/data/adb/vbmetadisguiser/vbmeta.conf` 中只需保存键值对的形式 (即键名=键值)，不支持其它注解。
 在 `/data/adb/tricky_store/security_patch.txt` 中配置安全补丁日期，请参考[Tricky Store]()
