@@ -77,19 +77,19 @@ module_status_update() {
     logowl "Updating module status"
     
     vbmeta_version=$(getprop 'ro.boot.vbmeta.avb_version' 2>/dev/null)
-    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' 2>/dev/null | tr '[:lower:]' '[:upper:]')
+    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' 2>/dev/null | cut -c1-18 | tr '[:lower:]' '[:upper:]')
+    ellipsis="(...)"
+    vbmeta_digest="${vbmeta_digest}${ellipsis}"
     vbmeta_hash_alg=$(getprop 'ro.boot.vbmeta.hash_alg' 2>/dev/null | tr '[:lower:]' '[:upper:]')
     vbmeta_size=$(getprop 'ro.boot.vbmeta.size' 2>/dev/null)
     device_state=$(getprop 'ro.boot.vbmeta.device_state' 2>/dev/null)
-    crypto_state=$(getprop 'ro.crypto.state' 2>/dev/null)
+    crypto_state=$(getprop 'ro.crypto.state' 2>/dev/null | tr '[:lower:]' '[:upper:]' )
     security_patch=$(getprop 'ro.build.version.security_patch' 2>/dev/null)
-    vendor_patch=$(getprop 'ro.vendor.build.security_patch' 2>/dev/null)
-    system_patch=$(getprop 'ro.system.build.security_patch' 2>/dev/null)
 
-    DESCRIPTION="[✅AVB ${vbmeta_version:-N/A} ${device_state:-N/A}, VBMeta Hash: ${vbmeta_digest:-N/A} (${vbmeta_hash_alg:-N/A}), 🔒Data ${crypto_state:-N/A}, Security patch: ${security_patch:-N/A}] A module to disguise the props of vbmeta, encryption status and security patch date✨"
+    DESCRIPTION="[✅VBMeta Hash: ${vbmeta_digest:-N/A} (${vbmeta_hash_alg:-N/A}), AVB ${vbmeta_version:-N/A} (${device_state:-N/A}) ✅Data Encryption: ${crypto_state:-N/A}, ✅Security Patch: ${security_patch:-N/A}] A module to disguise the props of vbmeta, security patch date and encryption status✨"
     
     if [! -f "$TRICKY_STORE_CONFIG_FILE" ]; then
-        DESCRIPTION="[✅AVB ${vbmeta_version:-N/A} ${device_state:-N/A}, VBMeta Hash: ${vbmeta_digest:-N/A} (${vbmeta_hash_alg:-N/A}), 🔒Data ${crypto_state:-N/A}, 😐TrickyStore security patch config file does NOT existed!] A module to disguise the props of vbmeta, encryption status and security patch date✨"
+        DESCRIPTION="[✅VBMeta Hash: ${vbmeta_digest:-N/A} (${vbmeta_hash_alg:-N/A}), AVB ${vbmeta_version:-N/A} (${device_state:-N/A}) ✅Data Encryption: ${crypto_state:-N/A}, ✅Tricky Store security patch config file does NOT exist!] A module to disguise the props of vbmeta, security patch date and encryption status✨"
     fi
 
     update_module_description "$DESCRIPTION" "$MODULE_PROP"
