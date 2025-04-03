@@ -11,7 +11,7 @@
 - 注意：该模块仅伪装属性值。如果你需要伪装从TEE返回的结果，你需要安装 [TrickyStore](https://github.com/5ec1cff/TrickyStore) 并配置 `/data/adb/tricky_store/security_patch.txt`
 - update the module description
 - 更新模块描述
-- SHA256: `cf6152007b4b63cca1f35efdb9ce157e527662f5a31a19522c3313fe4266e90a`
+- SHA256: `7cbb6f2fcc6cf1484037333ab586b3ddd4c4b1ca223fdd775ecf59932156e17d`
 
 ### 1.2.4
 
