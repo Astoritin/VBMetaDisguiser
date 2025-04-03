@@ -17,7 +17,7 @@ Please obtain the Boot Hash in **Key Attestation/Native Detector** and save it t
 About these props: AVB version will be set as `2.0` by default, the size of VBMeta partition will be set as `4096` by default, the encryption status will be set as `encrypted` by default.
 You can set the details in `/data/adb/vbmetadisguiser/vbmeta.conf` included AVB version, the size of VBMeta partition and the encryption status (`encrypted`,`unencrypted` or `unsupported`).
 
-#### NOTICE
+### NOTICE
 
 Save the form of keypair ONLY (key=value) in `/data/adb/vbmetadisguiser/vbmeta.conf`, any additional comments or annotations is not supported.
 
