@@ -21,4 +21,4 @@ One of the purpose of writing this module is bypass the specific items in specif
 ### NOTICE
 
 - Save the form of keypair ONLY (key=value) in `/data/adb/vbmetadisguiser/vbmeta.conf`, any additional comments or annotations is not supported.
-- VBMeta Disguiser will disguise these properties ONLY, you may install [Tricky Store](https://github.com/5ec1cff/TrickyStore) and read the instructions if you want to disguise the result from TEE.
+- VBMeta Disguiser will disguise these properties ONLY, you may install [Tricky Store](https://github.com/5ec1cff/TrickyStore) and follow the instructions if you want to disguise the result from TEE.
