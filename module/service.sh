@@ -116,7 +116,7 @@ module_status_update() {
         desc_ts_sp="✅Security patch: $security_patch"
     fi
 
-    DESCRIPTION="[${desc_avb}, ${desc_vbmeta}, ${desc_ts_sp}, ${desc_crypto}] A module to disguise the props of vbmeta, security patch date and encryption status✨"
+    DESCRIPTION="[${desc_vbmeta}, ${desc_avb}, ${desc_ts_sp}, ${desc_crypto}] A module to disguise the props of vbmeta, security patch date and encryption status✨"
 
     update_module_description "$DESCRIPTION" "$MODULE_PROP"
 
