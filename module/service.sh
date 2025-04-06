@@ -106,11 +106,11 @@ module_status_update() {
     fi
     desc_crypto="${desc_crypto}Data partition: $crypto_state"
 
-    if [ ! -e "$TRICKY_STORE_CONFIG_FILE" ] && [ -e "$CONFIG_FILE" ]; then
+    if [ ! -e "$TRICKY_STORE_CONFIG_FILE" ] && [ ! -e "$CONFIG_FILE" ]; then
         desc_ts_sp="❓Security patch config does NOT exist"
-    elif [ ! -f "$TRICKY_STORE_CONFIG_FILE" ] && [ -f "$CONFIG_FILE" ]; then
+    elif [ ! -f "$TRICKY_STORE_CONFIG_FILE" ] && [ ! -f "$CONFIG_FILE" ]; then
         desc_ts_sp="❌Security patch config abnormal"
-    elif [ ! -s "$TRICKY_STORE_CONFIG_FILE" ] && [ -s "$CONFIG_FILE" ]; then
+    elif [ ! -s "$TRICKY_STORE_CONFIG_FILE" ] && [ ! -s "$CONFIG_FILE" ]; then
         desc_ts_sp="❓Security patch: N/A"
     else
         desc_ts_sp="✅Security patch: $security_patch"
