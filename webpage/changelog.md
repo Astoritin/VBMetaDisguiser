@@ -3,6 +3,18 @@
 一个用于伪装 VBMeta 属性、加密状态和系统安全补丁日期的 Magisk 模块
 / A Magisk module to disguise the props of vbmeta, encryption status and security patch date
 
+### 1.2.6
+
+- Support config security patch date in `/data/adb/vbmetadisguiser/vbmeta.conf` you want to disguise too
+- 支持在 `/data/adb/vbmetadisguiser/vbmeta.conf` 内配置想要伪装的安全补丁日期
+- TrickyStore's configuration has the highest priority, with VBMeta Disguiser's built-in configuration (`/data/adb/vbmetadisguiser/vbmeta.conf`) coming second
+- [TrickyStore](https://github.com/5ec1cff/TrickyStore)的配置优先级最高，其次才是VBMeta Disguiser的 `/data/adb/vbmetadisguiser/vbmeta.conf` 内置的配置
+- Update the module description
+- 更新模块描述
+- Fix minor issues
+- 修复一些细节问题
+- SHA256: `6e6895d06533705a097dd71ac355b249b1036b7a30fabc216d8b8e6ec04b5ab0`
+
 ### 1.2.5
 
 - Support disguising the security patch date configuring in `/data/adb/tricky_store/security_patch.txt` from [TrickyStore](https://github.com/5ec1cff/TrickyStore)
@@ -11,7 +23,7 @@
 - 注意：该模块仅伪装属性值。如果你需要伪装从TEE返回的结果，你需要安装 [TrickyStore](https://github.com/5ec1cff/TrickyStore) 并配置 `/data/adb/tricky_store/security_patch.txt`
 - update the module description
 - 更新模块描述
-- SHA256: `7cbb6f2fcc6cf1484037333ab586b3ddd4c4b1ca223fdd775ecf59932156e17d`
+- SHA256: `dcca4968dae26c17d6d165a94078eba7c38a52f4f0ff2e1725960ab26d058268`
 
 ### 1.2.4
 
@@ -20,7 +32,8 @@
 - Fix the problems of some logical loophole
 - 修复一些逻辑漏洞问题
 - Add action.sh as shortcut to open the config directory with root file managers
-- 新增 `action.sh` 以便于快捷用 `Root` 相关的文件管理器打开配置文件目录
+- 新增 `action.sh` 以便于快捷用 `Root` 文件相关的管理器打开配置文件目录
+- SHA256: `821402c8e6ab6f63ce5da9089a4569386565121c663b25ab826c3e9b781c3de8`
 
 ### 1.2.3
 
