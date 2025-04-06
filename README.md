@@ -16,7 +16,7 @@ One of the purpose of writing this module is bypass the specific items in specif
 1. Please obtain the Boot Hash in **Key Attestation/Native Detector** and save it to the file `/data/adb/vbmetadisguiser/vbmeta.conf`.
 2. About these props: AVB version will be set as `2.0` by default, the size of VBMeta partition will be set as `4096` by default, the encryption status will be set as `encrypted` by default.
 3. You can set the details in `/data/adb/vbmetadisguiser/vbmeta.conf` included AVB version, the size of VBMeta partition and the encryption status (`encrypted`,`unencrypted` or `unsupported`).
-4. You can set the details in `/data/adb/tricky_store/security_patch.txt` included security patch date, system partition patch date and vendor partition patch date.
+4. You can set the details in `/data/adb/tricky_store/security_patch.txt` (well and also avaliable in `/data/adb/vbmetadisguiser/vbmeta.conf`) included security patch date, system partition patch date and vendor partition patch date.
 
 ### NOTICE
 
