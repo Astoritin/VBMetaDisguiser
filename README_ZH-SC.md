@@ -24,4 +24,4 @@
 ### 注意
 
 - 在 `/data/adb/vbmetadisguiser/vbmeta.conf` 中只需保存键值对的形式 (即键名=键值)，不支持其它注解。
-- VBMeta Disguiser 仅负责伪装属性值，若需要伪装 TEE 的结果，请安装模块 [Tricky Store](https://github.com/5ec1cff/TrickyStore) 并参阅其说明。
+- VBMeta Disguiser 仅负责伪装属性值，若需要伪装 TEE 返回的结果，请安装模块 [Tricky Store](https://github.com/5ec1cff/TrickyStore) 并参阅其说明。
