@@ -28,9 +28,6 @@ debug_props_info() {
 }
 
 date_format_86() {
-    # Format date string
-    # key_name: the name of the key
-    # key_date_value: the value of the key (date)
 
     key_name=$1
     key_date_value=$2
@@ -60,7 +57,6 @@ date_format_86() {
 }
 
 ts_sp_config_simple() {
-    # TrickyStore Security Patch config (simple mode)
 
     logowl "Loading config (simple mode)"
 
@@ -82,7 +78,6 @@ ts_sp_config_simple() {
 }
 
 ts_sp_config_advanced() {
-    # TrickyStore Security Patch config (advanced mode)
 
     logowl "Loading config (advanced mode)"
 
@@ -90,9 +85,6 @@ ts_sp_config_advanced() {
     ts_system=$(init_variables "system" "$TRICKY_STORE_CONFIG_FILE")
     ts_boot=$(init_variables "boot" "$TRICKY_STORE_CONFIG_FILE")
     ts_vendor=$(init_variables "vendor" "$TRICKY_STORE_CONFIG_FILE")
-
-    # if key pair all=date existed, export the variables directly and ignore other variables in security_patch.txt
-    # otherwise, export each variables manually
 
     if [ -n "$ts_all" ]; then
         verify_variables "ts_all" "$ts_all" "^([0-9]{6}|[0-9]{8}|[0-9]{4}-[0-9]{2}-[0-9]{2})$"
@@ -158,7 +150,7 @@ security_patch_info_disguiser() {
         fi
     else
         logowl "Tricky Store security patch config file ($TRICKY_STORE_CONFIG_FILE) does NOT exist!" "ERROR"
-        return 1
+        logowl "$MOD_NAME will try to fetch config from $CONFIG_FILE"
     fi
 
     logowl "After:"
@@ -175,6 +167,4 @@ logowl "Starting post-fs-data.sh"
 print_line
 security_patch_info_disguiser
 print_line
-logowl "Variables before case closed"
-debug_print_values >> "$LOG_FILE"
 logowl "post-fs-data.sh case closed!"
