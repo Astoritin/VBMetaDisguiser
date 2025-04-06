@@ -22,19 +22,23 @@ debug_props_info() {
 
     print_line
     logowl " " "SPACE"
-    logowl "ro.boot.vbmeta.device_state=$(getprop ro.boot.vbmeta.device_state)" "SPACE"
-    logowl "ro.boot.vbmeta.avb_version=$(getprop ro.boot.vbmeta.avb_version)" "SPACE"
-    logowl "ro.boot.vbmeta.hash_alg=$(getprop ro.boot.vbmeta.hash_alg)" "SPACE"
-    logowl "ro.boot.vbmeta.size=$(getprop ro.boot.vbmeta.size)" "SPACE"
-    logowl "ro.boot.vbmeta.digest=$(getprop ro.boot.vbmeta.digest)" "SPACE"
+    logowl "ro.boot.vbmeta.device_state=$(getprop ro.boot.vbmeta.device_state)"
+    logowl "ro.boot.vbmeta.avb_version=$(getprop ro.boot.vbmeta.avb_version)"
+    logowl "ro.boot.vbmeta.hash_alg=$(getprop ro.boot.vbmeta.hash_alg)"
+    logowl "ro.boot.vbmeta.size=$(getprop ro.boot.vbmeta.size)"
+    logowl "ro.boot.vbmeta.digest=$(getprop ro.boot.vbmeta.digest)"
+    logowl " " "SPACE"
+    logowl "ro.crypto.state=$(getprop ro.crypto.state)"
+    logowl " " "SPACE"
+    logowl "ro.build.version.security_patch=$(getprop ro.build.version.security_patch)"
+    logowl "ro.system.build.security_patch=$(getprop ro.system.build.security_patch)"
+    logowl "ro.vendor.build.security_patch=$(getprop ro.vendor.build.security_patch)"
     logowl " " "SPACE"
     print_line
 
 }
 
 config_loader() {
-    # config_loader: a function to load the config file saved in $CONFIG_FILE
-    # the format of $CONFIG_FILE: value=key, one key-value pair per line
 
     logowl "Loading config"
     
@@ -72,29 +76,51 @@ encryption_disguiser(){
 }
 
 module_status_update() {
-    # module_status_update: a function to update module status according to the result in function vbmeta disguiser
     
     logowl "Updating module status"
     
-    vbmeta_version=$(getprop 'ro.boot.vbmeta.avb_version' 2>/dev/null)
-    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' 2>/dev/null | cut -c1-18 | tr '[:lower:]' '[:upper:]')
+    vbmeta_version=$(getprop 'ro.boot.vbmeta.avb_version')
+    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' | cut -c1-18 | tr '[:lower:]' '[:upper:]')
     ellipsis="(...)"
     vbmeta_digest="${vbmeta_digest}${ellipsis}"
-    vbmeta_hash_alg=$(getprop 'ro.boot.vbmeta.hash_alg' 2>/dev/null | tr '[:lower:]' '[:upper:]')
-    vbmeta_size=$(getprop 'ro.boot.vbmeta.size' 2>/dev/null)
-    device_state=$(getprop 'ro.boot.vbmeta.device_state' 2>/dev/null)
-    crypto_state=$(getprop 'ro.crypto.state' 2>/dev/null | tr '[:lower:]' '[:upper:]' )
-    security_patch=$(getprop 'ro.build.version.security_patch' 2>/dev/null)
+    vbmeta_hash_alg=$(getprop 'ro.boot.vbmeta.hash_alg' | tr '[:lower:]' '[:upper:]')
+    vbmeta_size=$(getprop 'ro.boot.vbmeta.size')
+    device_state=$(getprop 'ro.boot.vbmeta.device_state')
+    crypto_state=$(getprop 'ro.crypto.state')
+    security_patch=$(getprop 'ro.build.version.security_patch')
 
-    DESCRIPTION="[✅VBMeta Hash: ${vbmeta_digest:-N/A} (${vbmeta_hash_alg:-N/A}), AVB ${vbmeta_version:-N/A} (${device_state:-N/A}) ✅Data Encryption: ${crypto_state:-N/A}, ✅Security Patch: ${security_patch:-N/A}] A module to disguise the props of vbmeta, security patch date and encryption status✨"
-    
-    if [! -f "$TRICKY_STORE_CONFIG_FILE" ]; then
-        DESCRIPTION="[✅VBMeta Hash: ${vbmeta_digest:-N/A} (${vbmeta_hash_alg:-N/A}), AVB ${vbmeta_version:-N/A} (${device_state:-N/A}) ✅Data Encryption: ${crypto_state:-N/A}, ✅Tricky Store security patch config file does NOT exist!] A module to disguise the props of vbmeta, security patch date and encryption status✨"
+    if [ -z "$vbmeta_digest" ] || echo "$vbmeta_digest" | grep -qE '^0+$'; then
+        desc_vbmeta="❓VBMeta Hash: N/A"
+    else
+        desc_vbmeta="✅VBMeta Hash: $vbmeta_digest ($vbmeta_hash_alg)"
     fi
+    
+    desc_avb="✅AVB ${vbmeta_version:-N/A} (${device_state:-N/A})"
+
+    if [ "$crypto_state" = "encrypted" ]; then
+        desc_crypto="🔒"
+    elif [ "$crypto_state" = "unencrypted" ]; then
+        desc_crypto="🔓"
+    elif [ "$crypto_state" = "unsupported" ]; then
+        desc_crypto="❌"
+    fi
+    desc_crypto="${desc_crypto}Data partition: $crypto_state"
+
+    if [ ! -e "$TRICKY_STORE_CONFIG_FILE" ]; then
+        desc_ts_sp="❓Security patch config does NOT exist"
+    elif [ ! -f "$TRICKY_STORE_CONFIG_FILE" ]; then
+        desc_ts_sp="❌Security patch config abnormal"
+    elif [ ! -s "$TRICKY_STORE_CONFIG_FILE" ]; then
+        desc_ts_sp="❓Security patch: N/A"
+    else
+        desc_ts_sp="✅Security patch: $security_patch"
+    fi
+
+    DESCRIPTION="[${desc_avb}, ${desc_vbmeta}, ${desc_ts_sp}, ${desc_crypto}] A module to disguise the props of vbmeta, security patch date and encryption status✨"
 
     update_module_description "$DESCRIPTION" "$MODULE_PROP"
 
-}
+} >> "$LOG_FILE" 2>&1
 
 . "$MODDIR/aautilities.sh"
 
@@ -114,6 +140,4 @@ logowl " "
 print_line
 logowl "After"
 debug_props_info
-logowl "Variables before case closed"
-debug_print_values >> "$LOG_FILE"
 logowl "service.sh case closed!"
