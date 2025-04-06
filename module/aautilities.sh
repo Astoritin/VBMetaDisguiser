@@ -59,9 +59,6 @@ is_recovery() {
 }
 
 install_env_check() {
-    # install_env_check: a function to check the current root solution
-    # Magisk branch name is Official by default
-    # Root solution is Magisk by default
 
     MAGISK_BRANCH_NAME="Official"
     ROOT_SOL="Magisk"
@@ -73,7 +70,6 @@ install_env_check() {
 
 
 module_intro() {
-    # module_intro: a function to show module basic info
 
     MODULE_PROP="$MODDIR/module.prop"
     MOD_NAME="$(sed -n 's/^name=\(.*\)/\1/p' "$MODULE_PROP")"
@@ -93,8 +89,6 @@ module_intro() {
 }
 
 init_logowl() {
-    # init_logowl: a function to initiate the log directory
-    # to make sure the log directory exist
 
     LOG_DIR="$1"
     if [ -z "$LOG_DIR" ]; then
@@ -116,9 +110,7 @@ init_logowl() {
 }
 
 logowl() {
-    # logowl: a function to format the log output
-    # LOG_MSG: the log message you need to print
-    # LOG_LEVEL (optional): the level of this log message
+
     LOG_MSG="$1"
     LOG_LEVEL="$2"
 
@@ -165,7 +157,7 @@ logowl() {
 }
 
 print_line() {
-    # print_line: a function to print separate line
+
     length=${1:-50}
 
     line=$(printf "%-${length}s" | tr ' ' '-')
@@ -173,10 +165,7 @@ print_line() {
 }
 
 init_variables() {
-    # init_variables: a function to initiate variables
-    # key: the key name
-    # config_file: the path and filename of the key it located
-    # value: the value of the key
+
     key="$1"
     config_file="$2"
 
@@ -185,7 +174,6 @@ init_variables() {
         return 1
     fi
 
-    # Fetch the value from config file
     value=$(sed -n "s/^$key=\(.*\)/\1/p" "$config_file" | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
     if check_value_safety "$key" "$value"; then
@@ -199,40 +187,33 @@ init_variables() {
 }
 
 check_value_safety(){
-    # check_value_safety: a function to check the safety of value
+
     key="$1"
     value="$2"
 
-    # Check if the value is null
     if [ -z "$value" ]; then
         logowl "Detect empty value (code: 1)" "WARN"
         return 1
     fi
 
-    # Escape the value to safe one
     value=$(printf "%s" "$value" | sed 's/'\''/'\\\\'\'''\''/g' | sed 's/[$;&|<>`"()]/\\&/g')
 
-    # Special handling for boolean values
     if [ "$value" = "true" ] || [ "$value" = "false" ]; then
         logowl "Verified $key=$value (boolean)" "TIPS"
         return 0
     fi
 
-    # If the value is start with "#", then take this line as comment line
     first_char=$(printf '%s' "$value" | cut -c1)
     if [ "$first_char" = "#" ]; then
         logowl "Detect comment symbol (code: 2)" "WARN"
         return 2
     fi
 
-    # fetch the main content before symbol "#"
     value=$(echo "$value" | cut -d'#' -f1 | xargs)
 
-    # regex: the regular expression to match the safe variable
     regex='^[a-zA-Z0-9/_\. -]*$'
     dangerous_chars='[`$();|<>]'
 
-    # Check for dangerous characters
     if echo "$value" | grep -Eq "$dangerous_chars"; then
         logowl "Key '$key' contains potential dangerous characters" "ERROR" >&2
         return 3
@@ -242,18 +223,11 @@ check_value_safety(){
         return 4
     fi
 
-    # If all checks pass
     logowl "Verified $key=$value" "TIPS"
     return 0
 }
 
 verify_variables() {
-    # verify_variables: a function to verify the availability of variables and export it
-    # config_var_name: the name of variable
-    # config_var_value: the value of variable
-    # validation_pattern: the regex pattern for checking the validity of the variable value
-    # default_value (optional): if the ordered value is unavailable, the value should be set as default
-    # script_var_name: the name of the variable in uppercase for exporting
   
     config_var_name="$1"
     config_var_value="$2"
@@ -268,9 +242,7 @@ verify_variables() {
         logowl "Config var value is empty or does NOT match the pattern" "WARN"
         logowl "Unavailable var: $script_var_name=$config_var_value"
 
-        # Check if a default value is provided
         if [ -n "$default_value" ]; then
-            # Use eval to check if the variable is already set
             if eval "[ -z \"\${$script_var_name+x}\" ]"; then
                 logowl "Using default value for $script_var_name: $default_value" "TIPS"
                 export "$script_var_name"="$default_value"
@@ -279,15 +251,11 @@ verify_variables() {
             fi
         else
             logowl "No default value provided for $script_var_name, keeping its current state" "TIPS"
-            # Do nothing if no default value is provided
         fi
     fi
 }
 
 update_module_description() {
-    # update_module_description: a function to update the value of the key "description"
-    # DESCRIPTION: the description you want to update to
-    # MODULE_PROP: the path of module.prop you want to update the description
 
     DESCRIPTION="$1"
     MODULE_PROP="$2"
@@ -300,7 +268,6 @@ update_module_description() {
 }
 
 debug_print_values() {
-    # debug_print_values: print the environment info and variables during this script running
 
     print_line
     logowl "All Environment Variables"
@@ -315,7 +282,6 @@ debug_print_values() {
 }
 
 show_system_info() {
-    # show_system_info: to show the Device, Android and RAM info.
 
     logowl "Device: $(getprop ro.product.brand) $(getprop ro.product.model) ($(getprop ro.product.device))"
     logowl "OS: Android $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk)), $(getprop ro.product.cpu.abi | cut -d '-' -f1)"
@@ -332,9 +298,6 @@ show_system_info() {
 
 
 file_compare() {
-    # file_compare: a function to compare whether file a and file b is same or not
-    # file_a: the path of file a
-    # file_b: the path of file b
 
     file_a="$1"
     file_b="$2"
@@ -352,38 +315,26 @@ file_compare() {
     fi
     hash_file_a=$(sha256sum "$file_a" | awk '{print $1}')
     hash_file_b=$(sha256sum "$file_b" | awk '{print $1}')
-    # logowl "File a: $hash_file_a"
-    # logowl "File b: $hash_file_b"
     if [ "$hash_file_a" == "$hash_file_b" ]; then
-        # logowl "The hash of file a is equal to file b, they are the same files!"
         return 0
     else
-        # logowl "The hash of file a is NOT equal to file b, they are NOT the same files!"
         return 1
     fi
 }
 
 abort_verify() {
-    # abort_verify: a function to abort verify because of detecting hash does NOT match
 
-    rm -rf "$VERIFY_DIR"
+    if [ -n "$VERIFY_DIR" ] && [ -d "$VERIFY_DIR" ] && [ "$VERIFY_DIR" != "/" ]; then
+        rm -rf "$VERIFY_DIR"
+    fi
     print_line
     logowl "$1" "WARN"
-    logowl "This zip may be corrupted or have been maliciously modified!" "WARN"
     logowl "Please try to download again or get it from official source!" "WARN"
     abort "This zip may be corrupted or have been maliciously modified!"
+
 }
 
 extract() {
-    # extract: a function to extract zip and verify the hash
-    # zip: the path of zip file
-    # file: the filename you want to extract from zip file
-    # dir: the dir you want to extract to
-    #
-    # junk_paths: whether preserve the file's folders in zip file or not
-    # For example, a file in zip file is: /META/AA/config.ini
-    # if false, file config.ini will be extracted into /(target dir)/META/AA/config.ini
-    # if true, file config.ini will be extracted into /(target dir)/config.ini
 
     zip=$1
     file=$2
@@ -395,11 +346,11 @@ extract() {
     file_path=""
     hash_path=""
     if [ $junk_paths = true ]; then
-      file_path="$dir/$(basename "$file")"
-      hash_path="$VERIFY_DIR/$(basename "$file").sha256"
+        file_path="$dir/$(basename "$file")"
+        hash_path="$VERIFY_DIR/$(basename "$file").sha256"
     else
-      file_path="$dir/$file"
-      hash_path="$VERIFY_DIR/$file.sha256"
+        file_path="$dir/$file"
+        hash_path="$VERIFY_DIR/$file.sha256"
     fi
 
     unzip $opts "$zip" "$file" -d "$dir" >&2
@@ -413,17 +364,13 @@ extract() {
     calculated_hash="$(sha256sum "$file_path" | cut -d ' ' -f1)"
 
     if [ "$expected_hash" == "$calculated_hash" ]; then
-      logowl "Verified $file" >&1
+        logowl "Verified $file" >&1
     else
-      abort_verify "Failed to verify $file"
-      rm -rf "$VERIFY_DIR"
+        abort_verify "Failed to verify $file"
     fi
 }
 
 clean_old_logs() {
-    # clean_old_logs: a function to clean logs dir as detecting too many logs
-    # log_dir: the log directory you want to clean
-    # files_max: the max value of files you allow to keep in logs dir
  
     log_dir="$1"
     files_max="$2"
