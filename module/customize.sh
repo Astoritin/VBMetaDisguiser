@@ -52,6 +52,8 @@ else
     logowl "Detect vbmeta.conf already exists"
     logowl "Skip overwriting vbmeta.conf"
 fi
-rm -rf "$VERIFY_DIR"
+if [ -n "$VERIFY_DIR" ] && [ -d "$VERIFY_DIR" ] && [ "$VERIFY_DIR" != "/" ]; then
+    rm -rf "$VERIFY_DIR"
+fi
 set_module_files_perm
 logowl "Welcome to use ${MOD_NAME}!"
