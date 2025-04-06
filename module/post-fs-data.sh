@@ -148,9 +148,14 @@ security_patch_info_disguiser() {
             logowl "Detect $TRICKY_STORE_CONFIG_FILE is set as simple mode" "TIPS"
             ts_sp_config_simple
         fi
-    else
+    elif [ ! -f "$TRICKY_STORE_CONFIG_FILE" ] && [ -f "$CONFIG_FILE" ]; then
         logowl "Tricky Store security patch config file ($TRICKY_STORE_CONFIG_FILE) does NOT exist!" "ERROR"
         logowl "$MOD_NAME will try to fetch config from $CONFIG_FILE"
+        TRICKY_STORE_CONFIG_FILE="$CONFIG_FILE"
+        ts_sp_config_advanced
+    else
+        logowl "Abnormal status! Both $TRICKY_STORE_CONFIG_FILE and $CONFIG_FILE are NULL!" "ERROR"
+        return 1
     fi
 
     logowl "After:"
