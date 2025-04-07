@@ -20,7 +20,6 @@ BOOT_HASH="00000000000000000000000000000000"
 
 debug_props_info() {
 
-    print_line
     logowl " " "SPACE"
     logowl "ro.boot.vbmeta.device_state=$(getprop ro.boot.vbmeta.device_state)"
     logowl "ro.boot.vbmeta.avb_version=$(getprop ro.boot.vbmeta.avb_version)"
@@ -34,7 +33,6 @@ debug_props_info() {
     logowl "ro.system.build.security_patch=$(getprop ro.system.build.security_patch)"
     logowl "ro.vendor.build.security_patch=$(getprop ro.vendor.build.security_patch)"
     logowl " " "SPACE"
-    print_line
 
 }
 
@@ -118,7 +116,7 @@ module_status_update() {
 
     DESCRIPTION="[${desc_vbmeta}, ${desc_avb}, ${desc_ts_sp}, ${desc_crypto}] A module to disguise the props of vbmeta, security patch date and encryption status✨"
 
-    update_module_description "$DESCRIPTION" "$MODULE_PROP"
+    update_config_value "description" "$DESCRIPTION" "$MODULE_PROP"
 
 } >> "$LOG_FILE" 2>&1
 
