@@ -45,9 +45,7 @@ extract "$ZIPFILE" 'service.sh' "$MODPATH"
 extract "$ZIPFILE" 'uninstall.sh' "$MODPATH"
 if [ ! -f "$CONFIG_DIR/vbmeta.conf" ]; then
     logowl "vbmeta.conf does NOT exist"
-    extract "$ZIPFILE" 'vbmeta.conf' "$TMPDIR"
-    mv "$TMPDIR/vbmeta.conf" "$CONFIG_DIR/vbmeta.conf" || abort "! Failed to create vbmeta.conf!"
-    
+    extract "$ZIPFILE" 'vbmeta.conf' "$CONFIG_DIR"    
 else
     logowl "Detect vbmeta.conf already exists"
     logowl "Skip overwriting vbmeta.conf"
@@ -55,5 +53,6 @@ fi
 if [ -n "$VERIFY_DIR" ] && [ -d "$VERIFY_DIR" ] && [ "$VERIFY_DIR" != "/" ]; then
     rm -rf "$VERIFY_DIR"
 fi
-set_module_files_perm
+logowl "Setting permissions"
+set_perm_recursive "$MODPATH" 0 0 0755 0644
 logowl "Welcome to use ${MOD_NAME}!"
