@@ -17,13 +17,11 @@ SECURITY_PATCH_DATE=""
 
 debug_props_info() {
 
-    print_line
     logowl " " "SPACE"
     logowl "ro.build.version.security_patch=$(getprop ro.build.version.security_patch)" "SPACE"
     logowl "ro.vendor.build.security_patch=$(getprop ro.vendor.build.security_patch)" "SPACE"
     logowl "ro.system.build.security_patch=$(getprop ro.system.build.security_patch)" "SPACE"
     logowl " " "SPACE"
-    print_line
 
 }
 
