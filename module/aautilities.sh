@@ -41,7 +41,7 @@ is_magisk() {
             *) MAGISK_BRANCH_NAME="Magisk" ;;
         esac
         ROOT_SOL="$MAGISK_BRANCH_NAME (${MAGISK_VER_CODE:-$MAGISK_V_VER_CODE})"
-        logowl "Installing from $ROOT_SOL"
+        logowl "Install from $ROOT_SOL"
         if [ -n "$KSU" ] || [ -n "$APATCH" ]; then
             logowl "Detect multiple Root solutions!" "WARN"
             ROOT_SOL="Multiple"
@@ -71,14 +71,8 @@ install_env_check() {
 
 module_intro() {
 
-    MODULE_PROP="$MODDIR/module.prop"
-    MOD_NAME="$(sed -n 's/^name=\(.*\)/\1/p' "$MODULE_PROP")"
-    MOD_AUTHOR="$(sed -n 's/^author=\(.*\)/\1/p' "$MODULE_PROP")"
-    MOD_VER="$(sed -n 's/^version=\(.*\)/\1/p' "$MODULE_PROP") ($(sed -n 's/^versionCode=\(.*\)/\1/p' "$MODULE_PROP"))"
-
     install_env_check
     print_line
-
     logowl "$MOD_NAME"
     logowl "By $MOD_AUTHOR"
     logowl "Version: $MOD_VER"
@@ -86,27 +80,30 @@ module_intro() {
     logowl "Current time stamp: $(date +"%Y-%m-%d %H:%M:%S")"
     logowl "Current module dir: $MODDIR"
     print_line
+
 }
 
 init_logowl() {
 
     LOG_DIR="$1"
     if [ -z "$LOG_DIR" ]; then
-      logowl "LOG_DIR is not provided!" "ERROR"
-      return 1
+        logowl "LOG_DIR is not provided!" "ERROR"
+        return 1
     fi
 
-  if [ ! -d "$LOG_DIR" ]; then
-      logowl "Log dir does NOT exist"
-      mkdir -p "$LOG_DIR" || {
-        logowl "Failed to create $LOG_DIR" "ERROR" >&2
-        return 2
-      }
-      logowl "Created $LOG_DIR"
-  else
-      logowl "$LOG_DIR already exists"
-  fi
-  logowl "Logowl initialized"
+    if [ ! -d "$LOG_DIR" ]; then
+        logowl "Log dir does NOT exist"
+        mkdir -p "$LOG_DIR" || {
+            logowl "Failed to create $LOG_DIR" "ERROR" >&2
+            return 2
+        }
+        logowl "Created $LOG_DIR"
+    else
+        logowl "$LOG_DIR already exists"
+    fi
+
+    logowl "Logowl initialized"
+
 }
 
 logowl() {
@@ -255,16 +252,29 @@ verify_variables() {
     fi
 }
 
-update_module_description() {
+update_config_value() {
 
-    DESCRIPTION="$1"
-    MODULE_PROP="$2"
-    if [ -z "$DESCRIPTION" ] || [ -z "$MODULE_PROP" ]; then
-      logowl "DESCRIPTION or MODULE_PROP is not provided yet!" "ERROR"
-      return 3
+    key_name="$1"
+    key_value="$2"
+    file_path="$3"
+
+    if [ -z "$key_name" ] || [ -z "$key_value" ] || [ -z "$file_path" ]; then
+        logowl "Key name/value/file path is NOT provided yet!" "ERROR"
+        return 1
+    elif [ ! -f "$file_path" ]; then
+        logowl "$file_path is NOT a valid file!" "ERROR"
+        return 2
     fi
-    logowl "Update description: $DESCRIPTION"
-    sed -i "/^description=/c\description=$DESCRIPTION" "$MODULE_PROP"
+    logowl "Update $key_name: $key_value"
+    sed -i "/^${key_name}=/c\\${key_name}=${key_value}" "$file_path"
+
+    result_update_value=$?
+    if [ $result_update_value -eq 0 ]; then
+        logowl "Succeeded (code: $result_update_value)"
+    else
+        logowl "Failed to update $key_name=$key_value into $file_path (code: $result_update_value)" "WARN"
+    fi
+
 }
 
 debug_print_values() {
@@ -285,17 +295,8 @@ show_system_info() {
 
     logowl "Device: $(getprop ro.product.brand) $(getprop ro.product.model) ($(getprop ro.product.device))"
     logowl "OS: Android $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk)), $(getprop ro.product.cpu.abi | cut -d '-' -f1)"
-    mem_info=$(free -m)
-    ram_total=$(echo "$mem_info" | awk '/Mem/ {print $2}')
-    ram_used=$(echo "$mem_info" | awk '/Mem/ {print $3}')
-    ram_free=$((ram_total - ram_used))
-    swap_total=$(echo "$mem_info" | awk '/Swap/ {print $2}')
-    swap_used=$(echo "$mem_info" | awk '/Swap/ {print $3}')
-    swap_free=$(echo "$mem_info" | awk '/Swap/ {print $4}')
-    logowl "RAM: ${ram_total}MB  Used:${ram_used}MB  Free:${ram_free}MB"
-    logowl "SWAP: ${swap_total}MB  Used:${swap_used}MB  Free:${swap_free}MB"
-}
 
+}
 
 file_compare() {
 
@@ -355,7 +356,7 @@ extract() {
 
     unzip $opts "$zip" "$file" -d "$dir" >&2
     [ -f "$file_path" ] || abort_verify "$file does NOT exist!"
-    logowl "Extract $file -> $file_path" >&1
+    logowl "Extract $file → $file_path" >&1
 
     unzip $opts "$zip" "$file.sha256" -d "$VERIFY_DIR" >&2
     [ -f "$hash_path" ] || abort_verify "$file.sha256 does NOT exist!"
