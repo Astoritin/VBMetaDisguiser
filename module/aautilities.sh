@@ -162,7 +162,6 @@ print_line() {
 }
 
 init_variables() {
-
     key="$1"
     config_file="$2"
 
@@ -171,7 +170,72 @@ init_variables() {
         return 1
     fi
 
-    value=$(sed -n "s/^$key=\(.*\)/\1/p" "$config_file" | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    value=$(awk -v key="$key" '
+        BEGIN {
+            key_regex = "^" key "="
+            found = 0
+            in_quote = 0
+            value = ""
+        }
+        $0 ~ key_regex && !found {
+            sub(key_regex, "")
+            remaining = $0
+
+            sub(/^[[:space:]]*/, "", remaining)
+
+            if (remaining ~ /^"/) {
+                in_quote = 1
+                remaining = substr(remaining, 2)
+
+                if (match(remaining, /"([[:space:]]*)$/)) {
+                    value = substr(remaining, 1, RSTART - 1)
+                    in_quote = 0
+                } else {
+                    value = remaining
+                    while ((getline remaining) > 0) {
+                        if (match(remaining, /"([[:space:]]*)$/)) {
+                            line_part = substr(remaining, 1, RSTART - 1)
+                            value = value "\n" line_part
+                            in_quote = 0
+                            break
+                        } else {
+                            value = value "\n" remaining
+                        }
+                    }
+                    if (in_quote) {
+                        print "Error: Unclosed quote for key " key > "/dev/stderr"
+                        exit 1
+                    }
+                }
+                found = 1
+            } else {
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", remaining)
+                value = remaining
+                found = 1
+            }
+            if (found) exit 0
+        }
+        END {
+            if (!found) exit 1
+            gsub(/[[:space:]]+$/, "", value)
+            print value
+        }
+    ' "$config_file")
+
+    awk_exit_status=$?
+
+    case $awk_exit_status in
+        1)
+            logowl "Key '$key' not found or unclosed quote in $config_file" "ERROR" >&2
+            return 1
+            ;;
+        0)  ;;
+        *)  logowl "Error processing key '$key' in $config_file" "ERROR" >&2
+            return 1
+            ;;
+    esac
+
+    value=$(printf "%s" "$value" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
     if check_value_safety "$key" "$value"; then
         echo "$value"
@@ -180,7 +244,6 @@ init_variables() {
         result=$?
         return "$result"
     fi
-
 }
 
 check_value_safety(){
