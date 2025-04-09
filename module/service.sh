@@ -5,7 +5,7 @@ CONFIG_DIR="/data/adb/vbmetadisguiser"
 
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 LOG_DIR="$CONFIG_DIR/logs"
-LOG_FILE="$LOG_DIR/vd_log_vbmeta_$(date +"%Y-%m-%d_%H-%M-%S").log"
+LOG_FILE="$LOG_DIR/vd_log_core_b_$(date +"%Y-%m-%d_%H-%M-%S").log"
 
 MODULE_PROP="${MODDIR}/module.prop"
 MOD_NAME="$(sed -n 's/^name=\(.*\)/\1/p' "$MODULE_PROP")"
@@ -15,24 +15,24 @@ MOD_VER="$(sed -n 's/^version=\(.*\)/\1/p' "$MODULE_PROP") ($(sed -n 's/^version
 TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
 
 AVB_VERSION="2.0"
-VBMETA_SIZE="4096"
+VBMETA_SIZE="8192"
 BOOT_HASH="00000000000000000000000000000000"
 
 debug_props_info() {
 
-    logowl " " "SPACE"
+    print_line
     logowl "ro.boot.vbmeta.device_state=$(getprop ro.boot.vbmeta.device_state)"
     logowl "ro.boot.vbmeta.avb_version=$(getprop ro.boot.vbmeta.avb_version)"
     logowl "ro.boot.vbmeta.hash_alg=$(getprop ro.boot.vbmeta.hash_alg)"
     logowl "ro.boot.vbmeta.size=$(getprop ro.boot.vbmeta.size)"
     logowl "ro.boot.vbmeta.digest=$(getprop ro.boot.vbmeta.digest)"
-    logowl " " "SPACE"
+    print_line
     logowl "ro.crypto.state=$(getprop ro.crypto.state)"
-    logowl " " "SPACE"
+    print_line
     logowl "ro.build.version.security_patch=$(getprop ro.build.version.security_patch)"
     logowl "ro.system.build.security_patch=$(getprop ro.system.build.security_patch)"
     logowl "ro.vendor.build.security_patch=$(getprop ro.vendor.build.security_patch)"
-    logowl " " "SPACE"
+    print_line
 
 }
 
@@ -134,7 +134,6 @@ debug_props_info
 vbmeta_disguiser
 encryption_disguiser
 module_status_update
-logowl " "
 print_line
 logowl "After"
 debug_props_info
