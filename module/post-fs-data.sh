@@ -5,7 +5,7 @@ CONFIG_DIR="/data/adb/vbmetadisguiser"
 
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 LOG_DIR="$CONFIG_DIR/logs"
-LOG_FILE="$LOG_DIR/vd_log_spatch_$(date +"%Y-%m-%d_%H-%M-%S").log"
+LOG_FILE="$LOG_DIR/vd_log_core_a_$(date +"%Y-%m-%d_%H-%M-%S").log"
 
 MODULE_PROP="${MODDIR}/module.prop"
 MOD_NAME="$(sed -n 's/^name=\(.*\)/\1/p' "$MODULE_PROP")"
@@ -160,6 +160,80 @@ security_patch_info_disguiser() {
     debug_props_info
 }
 
+custom_install_recovery_script_remove() {
+
+    logowl "Starting custom install recovery script removal process"
+
+    block_install_recovery_script=$(init_variables "block_install_recovery_script" "$CONFIG_FILE")
+    block_install_recovery_script_mode=$(init_variables "block_install_recovery_script_mode" "$CONFIG_FILE")
+    custom_install_recovery_script_path=$(init_variables "custom_install_recovery_script_path" "$CONFIG_FILE")
+
+    if [ -z "$custom_install_recovery_script_path" ]; then
+        logowl "Custom install-recovery.sh path is NOT set" "ERROR"
+        return 2
+    fi
+
+    if [ "$block_install_recovery_script" = "false" ] || [ -z "$block_install_recovery_script" ]; then
+        logowl "Custom install-recovery.sh removal feature is disabled"
+        return 1
+    elif [ "$block_install_recovery_script" = "true" ]; then
+        if [ -z "$block_install_recovery_script_mode" ]; then
+            logowl "Block install-recovery.sh mode is NOT set!" "ERROR"
+            return 1
+        elif [ "$block_install_recovery_script_mode" = "MN" ]; then
+            if [ -n "$KSU" ] || [ -n "$APATCH" ]; then
+                logowl "Detect $MOD_NAME running on KernelSU / APatch, which supports Make Node mode"
+            elif [ -n "$MAGISK_V_VER_CODE" ]; then
+                if [ $MAGISK_V_VER_CODE -ge 28102 ]; then
+                    logowl "Detect $MOD_NAME running on Magisk 28102+, which supports Make Node mode"
+                else
+                    logowl "Make Node mode needs Magisk version 28102 and higher (current $MAGISK_V_VER_CODE)!" "ERROR"
+                    logowl "$MOD_NAME will revert to ED (Erase/Delete) mode"
+                    block_install_recovery_script_mode="ED"
+                fi
+            else
+                logowl "Make Node mode needs Magisk 28102+, KernelSU or APatch!" "ERROR"
+                logowl "$MOD_NAME will revert to ED (Erase/Delete) mode"
+                block_install_recovery_script_mode="ED"
+            fi
+        else
+            logowl "Abnormal block install-recovery.sh mode status!" "ERROR"
+            return 1
+        fi
+    else
+        logowl "Abnormal block install-recovery.sh switch status!" "ERROR"
+        return 1
+    fi
+
+    logowl "Current block install-recovery.sh mode: $block_install_recovery_script_mode"
+
+    IFS=' '
+    for ins_rec_sh in $custom_install_recovery_script_path; do
+        if [ -f "$ins_rec_sh" ]; then
+            ins_parent_dir=$(dirname "$ins_rec_sh")
+            mirror_ins_path="${MODDIR}${ins_parent_dir}"
+            mirror_ins_file="${MODDIR}${ins_rec_sh}"
+
+            if [ "$block_install_recovery_script_mode" = "MN" ]; then
+                logowl "Create dir: $mirror_ins_path"
+                mkdir -p "$mirror_ins_path"
+                logowl "Create device node: $mirror_ins_file"
+                mknod "$mirror_ins_file" c 0 0 || { logowl "Failed to create node (code: $?)" "ERROR"; }
+            elif [ "$block_install_recovery_script_mode" = "ED" ]; then
+                logowl "Backup $ins_rec_sh"
+                cp "$ins_rec_sh" "$mirror_ins_file.bak" || { logowl "Backup failed (code: $?)" "ERROR"; }
+                logowl "Delete file: $ins_rec_sh"
+                rm "$ins_rec_sh" || { logowl "Deletion failed (code: $?)" "ERROR"; }
+            fi
+            logowl "Succeeded (code: $?)"
+        else
+            logowl "File not found: $ins_rec_sh" "WARN"
+        fi
+    done
+    unset IFS
+
+}
+
 . "$MODDIR/aautilities.sh"
 
 init_logowl "$LOG_DIR"
@@ -169,5 +243,6 @@ print_line
 logowl "Starting post-fs-data.sh"
 print_line
 security_patch_info_disguiser
+custom_install_recovery_script_remove
 print_line
 logowl "post-fs-data.sh case closed!"
