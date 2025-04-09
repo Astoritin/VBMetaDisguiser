@@ -1,7 +1,7 @@
 id=vbmetadisguiser
 name=VBMeta Disguiser
 version=v1.2.7
-versionCode=534
+versionCode=550
 author=Astoritin Ambrosius
-updateJson=https://raw.githubusercontent.com/Astoritin/VBMetaDisguiser/main/webpage/update.json
 description=A module to disguise the props of vbmeta, security patch date and encryption status✨
+updateJson=https://raw.githubusercontent.com/Astoritin/VBMetaDisguiser/main/webpage/update.json
