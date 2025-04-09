@@ -48,11 +48,11 @@ if [ ! -f "$CONFIG_DIR/vbmeta.conf" ]; then
     extract "$ZIPFILE" 'vbmeta.conf' "$CONFIG_DIR"    
 else
     logowl "Detect vbmeta.conf already exists"
-    logowl "Skip overwriting vbmeta.conf"
+    logowl "vbmeta.conf will NOT be overwritten"
 fi
 if [ -n "$VERIFY_DIR" ] && [ -d "$VERIFY_DIR" ] && [ "$VERIFY_DIR" != "/" ]; then
     rm -rf "$VERIFY_DIR"
 fi
 logowl "Setting permissions"
 set_perm_recursive "$MODPATH" 0 0 0755 0644
-logowl "Welcome to use ${MOD_NAME}!"
+logowl "Welcome to use $MOD_NAME!"
