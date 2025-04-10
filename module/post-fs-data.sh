@@ -162,7 +162,7 @@ security_patch_info_disguiser() {
 
 custom_install_recovery_script_remove() {
 
-    logowl "Starting custom install recovery script removal process"
+    logowl "Starting custom install-recovery.sh script removal process"
 
     block_install_recovery_script=$(init_variables "block_install_recovery_script" "$CONFIG_FILE")
     block_install_recovery_script_mode=$(init_variables "block_install_recovery_script_mode" "$CONFIG_FILE")
@@ -182,20 +182,32 @@ custom_install_recovery_script_remove() {
             return 1
         elif [ "$block_install_recovery_script_mode" = "MN" ]; then
             if [ -n "$KSU" ] || [ -n "$APATCH" ]; then
+                logowl "Current Mode: MN (Make Node)"
                 logowl "Detect $MOD_NAME running on KernelSU / APatch, which supports Make Node mode"
             elif [ -n "$MAGISK_V_VER_CODE" ]; then
                 if [ $MAGISK_V_VER_CODE -ge 28102 ]; then
                     logowl "Detect $MOD_NAME running on Magisk 28102+, which supports Make Node mode"
-                else
-                    logowl "Make Node mode needs Magisk version 28102 and higher (current $MAGISK_V_VER_CODE)!" "ERROR"
-                    logowl "$MOD_NAME will revert to ED (Erase/Delete) mode"
-                    block_install_recovery_script_mode="ED"
                 fi
             else
-                logowl "Make Node mode needs Magisk 28102+, KernelSU or APatch!" "ERROR"
-                logowl "$MOD_NAME will revert to ED (Erase/Delete) mode"
-                block_install_recovery_script_mode="ED"
+                logowl "Make Node mode needs Magisk version 28102 and higher, KernelSU or APatch!" "ERROR"
+                logowl "However, ED (Erase/Delete) mode is NOT systemless behavior"
+                logowl "$MOD_NAME will skip these step directly and will NOT switch into ED mode"
+                logowl "Please set block_install_recovery_script_mode=ED manually if need"
+                return 2
             fi
+        elif [ "$block_install_recovery_script_mode" = "RN" ]; then
+            logowl "Current Mode: RN (Rename)"
+            logowl "RN (Rename) mode is NOT systemless behavior" "WARN"
+            logowl "If your file system is read-only, it will NOT work at all...well it is okay"
+            logowl "But if NOT, please make sure you know how to rescue from your device being brick!"
+            logowl "Or make sure you have the method to modify the files located in /system partition by OrangeFox/TWRP"
+            logowl "This option/method must be switched by yourself ONLY, you have been warned before you change the mode"
+        elif [ "$block_install_recovery_script_mode" = "ED" ]; then
+            logowl "Current Mode: DE (Delete/Erase)"
+            logowl "ED (Erase/Delete) mode is NOT systemless behavior" "WARN"
+            logowl "If your file system is read-only, it will NOT work at all...well it is okay"
+            logowl "But if NOT, please make sure you know how to rescue from your device being brick!"
+            logowl "This option/method must be switched by yourself ONLY, you have been warned before you change the mode"
         else
             logowl "Abnormal block install-recovery.sh mode status!" "ERROR"
             return 1
@@ -204,8 +216,6 @@ custom_install_recovery_script_remove() {
         logowl "Abnormal block install-recovery.sh switch status!" "ERROR"
         return 1
     fi
-
-    logowl "Current block install-recovery.sh mode: $block_install_recovery_script_mode"
 
     IFS=' '
     for ins_rec_sh in $custom_install_recovery_script_path; do
@@ -219,15 +229,101 @@ custom_install_recovery_script_remove() {
                 mkdir -p "$mirror_ins_path"
                 logowl "Create device node: $mirror_ins_file"
                 mknod "$mirror_ins_file" c 0 0 || { logowl "Failed to create node (code: $?)" "ERROR"; }
+            elif [ "$block_install_recovery_script_mode" = "RN" ]; then
+                logowl "Rename $ins_rec_sh → ${ins_rec_sh}.old"
+                mv -n "$ins_rec_sh" "${ins_rec_sh}.old" || { logowl "Rename failed (code: $?)" "ERROR"; }
             elif [ "$block_install_recovery_script_mode" = "ED" ]; then
-                logowl "Backup $ins_rec_sh"
-                cp "$ins_rec_sh" "$mirror_ins_file.bak" || { logowl "Backup failed (code: $?)" "ERROR"; }
                 logowl "Delete file: $ins_rec_sh"
-                rm "$ins_rec_sh" || { logowl "Deletion failed (code: $?)" "ERROR"; }
+                rm -f "$ins_rec_sh" || { logowl "Deletion failed (code: $?)" "ERROR"; }
             fi
             logowl "Succeeded (code: $?)"
         else
             logowl "File not found: $ins_rec_sh" "WARN"
+        fi
+    done
+    unset IFS
+
+}
+
+custom_addon_d_remove() {
+
+    logowl "Starting custom addon.d removal process"
+
+    block_addon_d_dir=$(init_variables "block_addon_d_dir" "$CONFIG_FILE")
+    block_addon_d_dir_mode=$(init_variables "block_addon_d_dir_mode" "$CONFIG_FILE")
+    custom_addon_d_path=$(init_variables "custom_addon_d_path" "$CONFIG_FILE")
+
+    if [ -z "$custom_addon_d_path" ]; then
+        logowl "Custom addon.d path is NOT set" "ERROR"
+        return 2
+    fi
+
+    if [ "$block_addon_d_dir" = "false" ] || [ -z "$block_addon_d_dir" ]; then
+        logowl "Custom addon.d removal feature is disabled"
+        return 1
+    elif [ "$block_addon_d_dir" = "true" ]; then
+        if [ -z "$block_addon_d_dir_mode" ]; then
+            logowl "Block addon.d mode is NOT set!" "ERROR"
+            return 1
+        elif [ "$block_addon_d_dir_mode" = "MN" ]; then
+            if [ -n "$KSU" ] || [ -n "$APATCH" ]; then
+                logowl "Current Mode: MN (Make Node)"
+                logowl "Detect $MOD_NAME running on KernelSU / APatch, which supports Make Node mode"
+            elif [ -n "$MAGISK_V_VER_CODE" ]; then
+                if [ $MAGISK_V_VER_CODE -ge 28102 ]; then
+                    logowl "Detect $MOD_NAME running on Magisk 28102+, which supports Make Node mode"
+                fi
+            else
+                logowl "Make Node mode needs Magisk version 28102 and higher, KernelSU or APatch!" "ERROR"
+                logowl "However, ED (Erase/Delete) mode is NOT systemless behavior"
+                logowl "$MOD_NAME will skip these step directly and will NOT switch into ED mode"
+                logowl "Please set block_addon_d_dir_mode=ED manually if need"
+                return 2
+            fi
+        elif [ "$block_addon_d_dir_mode" = "RN" ]; then
+            logowl "Current Mode: RN (Rename)"
+            logowl "RN (Rename) mode is NOT systemless behavior" "WARN"
+            logowl "If your file system is read-only, it will NOT work at all...well it is okay"
+            logowl "But if NOT, please make sure you know how to rescue from your device being brick!"
+            logowl "Or make sure you have the method to modify the files located in /system partition by OrangeFox/TWRP"
+            logowl "This option/method must be switched by yourself ONLY, you have been warned before you change the mode"
+        elif [ "$block_addon_d_dir_mode" = "ED" ]; then
+            logowl "Current Mode: DE (Delete/Erase)"
+            logowl "ED (Erase/Delete) mode is NOT systemless behavior" "WARN"
+            logowl "If your file system is read-only, it will NOT work at all...well it is okay"
+            logowl "But if NOT, please make sure you know how to rescue from your device being brick!"
+            logowl "This option/method must be switched by yourself ONLY, you have been warned before you change the mode"
+        else
+            logowl "Abnormal block addon.d mode status!" "ERROR"
+            return 1
+        fi
+    else
+        logowl "Abnormal block addon.d switch status!" "ERROR"
+        return 1
+    fi
+
+    IFS=' '
+    for addon_d in $custom_addon_d_path; do
+        if [ -f "$addon_d" ]; then
+            addon_d_parent_dir=$(dirname "$addon_d")
+            mirror_addon_d_path="${MODDIR}${addon_d_parent_dir}"
+            mirror_addon_d_file="${MODDIR}${addon_d}"
+
+            if [ "$block_addon_d_dir_mode" = "MN" ]; then
+                logowl "Create dir: $mirror_addon_d_path"
+                mkdir -p "$mirror_addon_d_path"
+                logowl "Create device node: $mirror_addon_d_file"
+                mknod "$mirror_addon_d_file" c 0 0 || { logowl "Failed to create node (code: $?)" "ERROR"; }
+            elif [ "$block_addon_d_dir_mode" = "RN" ]; then
+                logowl "Rename $addon_d → ${addon_d}.old"
+                mv -n "$addon_d" "${addon_d}.old" || { logowl "Rename failed (code: $?)" "ERROR"; }
+            elif [ "$block_addon_d_dir_mode" = "ED" ]; then
+                logowl "Delete file: $addon_d"
+                rm -f "$addon_d" || { logowl "Deletion failed (code: $?)" "ERROR"; }
+            fi
+            logowl "Succeeded (code: $?)"
+        else
+            logowl "Folder not found: $addon_d" "WARN"
         fi
     done
     unset IFS
@@ -244,5 +340,6 @@ logowl "Starting post-fs-data.sh"
 print_line
 security_patch_info_disguiser
 custom_install_recovery_script_remove
+custom_addon_d_remove
 print_line
 logowl "post-fs-data.sh case closed!"
