@@ -3,6 +3,20 @@
 一个用于伪装 VBMeta 属性、加密状态和系统安全补丁日期的 Magisk 模块
 / A Magisk module to disguise the props of vbmeta, encryption status and security patch date
 
+## 变更日志 / Changelog
+
+### 1.2.7
+
+- Add new feature: custom `install-recovery.sh` script hiding/removing
+- 新增功能：隐藏/删除自定义的 `install-recovery.sh` 脚本
+- Add new feature: custom `addon.d` folder hiding/removing
+- 新增功能：隐藏/删除自定义的 `addon.d` 文件夹
+- These features are disabled by default, support three mode: `MN` (Make Node), `RN` (Rename), `ED` (Erase/Delete) 
+- 这些功能默认情况下禁用，支持以下三种模式：`MN` (Make Node，创建节点模式)，`RN` (Rename，重命名)，`ED` (抹除/删除)
+- WARN: `MN` (Make Node) mode requires Magisk 28102+, KernelSU or APatch, `RN` (Rename) and `ED` (Erase/Delete) are NOT systemless ways, if your ROM is EROFS or read-only it won't work at all, before it works you need to know how to rescue from being brick if you use. Once you change the working mode manually means you have got these warning, I have nothing to do if your device gets bootloop or brick
+- 警告：`MN` (Make Node，创建节点模式) 要求 Magisk 28102+、KernelSU 或 APatch，`RN` (重命名模式) 和 `ED` (抹除/删除模式) 涉及直接修改系统分区，若你的ROM是EROFS或者只读，则这两种模式无法工作。若你需要切换至这两种模式，你需要在这两种模式生效前知道如何救砖！一旦你手工更改到这两种工作模式意味着你已经收到了上述警告，若你的设备卡在启动界面或者变砖，则与我无关
+- SHA256: `5bc84e78b93c0f509f01c3b9513da5b7d475cdd8740c936882e3f53caea99105`
+
 ### 1.2.6
 
 - Support config security patch date in `/data/adb/vbmetadisguiser/vbmeta.conf` you want to disguise too
