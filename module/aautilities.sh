@@ -1,15 +1,32 @@
 #!/system/bin/sh
 MODDIR=${0%/*}
 
+is_magisk() {
+
+    if ! command -v magisk >/dev/null 2>&1; then
+        return 1
+    fi
+
+    MAGISK_V_VER_NAME="$(magisk -v)"
+    MAGISK_V_VER_CODE="$(magisk -V)"
+    case "$MAGISK_V_VER_NAME" in
+        *"-alpha"*) MAGISK_BRANCH_NAME="Magisk Alpha" ;;
+        *"-lite"*)  MAGISK_BRANCH_NAME="Magisk Lite" ;;
+        *"-kitsune"*) MAGISK_BRANCH_NAME="Kitsune Mask" ;;
+        *"-delta"*) MAGISK_BRANCH_NAME="Magisk Delta" ;;
+        *) MAGISK_BRANCH_NAME="Magisk" ;;
+    esac
+    DETECT_MAGISK="true"
+    DETECT_MAGISK_DETAIL="$MAGISK_BRANCH_NAME (${MAGISK_VER_CODE:-$MAGISK_V_VER_CODE})"
+    return 0
+
+}
+
 is_kernelsu() {
     if [ -n "$KSU" ]; then
-        logowl "Install from KernelSU"
-        logowl "KernelSU version: $KSU_KERNEL_VER_CODE (kernel) + $KSU_VER_CODE (ksud)"
-        ROOT_SOL="KernelSU (kernel:$KSU_KERNEL_VER_CODE, ksud:$KSU_VER_CODE)"
-        if { type magisk; } || [ -n "$APATCH" ]; then
-            logowl "Detect multiple Root solutions!" "WARN"
-            ROOT_SOL="Multiple"
-        fi
+        DETECT_KSU="true"
+        DETECT_KSU_DETAIL="KernelSU (kernel:$KSU_KERNEL_VER_CODE, ksud:$KSU_VER_CODE)"
+        ROOT_SOL="KernelSU"
         return 0
     fi
     return 1
@@ -17,57 +34,115 @@ is_kernelsu() {
 
 is_apatch() {
     if [ -n "$APATCH" ]; then
-        logowl "Install from APatch"
-        logowl "APatch version: $APATCH_VER_CODE"
-        ROOT_SOL="APatch ($APATCH_VER_CODE)"
-        if { type magisk; } || [ -n "$KSU" ]; then
-            logowl "Detect multiple Root solutions!" "WARN"
-            ROOT_SOL="Multiple"
-        fi
-        return 0
-    fi
-    return 1
-}
-
-is_magisk() {
-    if [ -n "$MAGISK_VER_CODE" ] || [ -n "$(magisk -v || magisk -V)" ]; then
-        MAGISK_V_VER_NAME="$(magisk -v)"
-        MAGISK_V_VER_CODE="$(magisk -V)"
-        case "$MAGISK_VER $MAGISK_V_VER_NAME" in
-            *"-alpha"*) MAGISK_BRANCH_NAME="Magisk Alpha" ;;
-            *"-lite"*)  MAGISK_BRANCH_NAME="Magisk Lite" ;;
-            *"-kitsune"*) MAGISK_BRANCH_NAME="Kitsune Mask" ;;
-            *"-delta"*) MAGISK_BRANCH_NAME="Magisk Delta" ;;
-            *) MAGISK_BRANCH_NAME="Magisk" ;;
-        esac
-        ROOT_SOL="$MAGISK_BRANCH_NAME (${MAGISK_VER_CODE:-$MAGISK_V_VER_CODE})"
-        logowl "Install from $ROOT_SOL"
-        if [ -n "$KSU" ] || [ -n "$APATCH" ]; then
-            logowl "Detect multiple Root solutions!" "WARN"
-            ROOT_SOL="Multiple"
-        fi
+        DETECT_APATCH="true"
+        DETECT_APATCH_DETAIL="APatch ($APATCH_VER_CODE)"
+        ROOT_SOL="APatch"
         return 0
     fi
     return 1
 }
 
 is_recovery() {
-    ROOT_SOL="Recovery"
-    logowl "Install module in Recovery mode is not supported, especially for KernelSU / APatch!" "FATAL"
+    if [ "$BOOTMODE" = "false" ]; then
+        ROOT_SOL="Recovery"
+    else
+        ROOT_SOL="Unknown"
+    fi
+    logowl "Install module in Recovery/Unknown is not supported, especially for KernelSU / APatch!" "FATAL"
     logowl "Please install this module in Magisk / KernelSU / APatch APP!" "FATAL"
     abort
+}
+
+magisk_enforce_denylist_status() {
+
+    if is_magisk; then
+        MAGISK_DE_STATUS=$(magisk --sqlite "SELECT value FROM settings WHERE key='denylist';" | sed 's/^.*=\([01]\)$/\1/')
+        if [ -n "$MAGISK_DE_STATUS" ]; then
+            if [ "$MAGISK_DE_STATUS" = "1" ]; then
+                MAGISK_DE_DESC="Enabled (Magisk)"
+            elif [ "$MAGISK_DE_STATUS" = "0" ]; then
+                MAGISK_DE_DESC="Disabled (Magisk)"
+            fi
+        fi
+    else
+        return 1
+    fi
+
+}
+
+zygisksu_enforce_denylist_status() {
+
+    if [ -d "$MOD_ZYGISKSU_PATH" ]; then
+        ZYGISKSU_DE_STATUS=$(znctl status | grep "enforce_denylist" | sed 's/^.*:\([01]\)$/\1/')
+        if [ -n "$ZYGISKSU_DE_STATUS" ]; then
+            if [ "$ZYGISKSU_DE_STATUS" = "1" ]; then
+                ZYGISKSU_DE_DESC="Enabled (ZN)"
+            elif [ "$ZYGISKSU_DE_STATUS" = "0" ]; then
+                ZYGISKSU_DE_DESC="Disabled (ZN)"
+            fi
+        fi
+    else
+        return 1
+    fi
+
+}
+
+enforce_denylist_desc() {
+
+    if [ -n "$ZYGISKSU_DE_DESC" ] && [ -n "$MAGISK_DE_DESC" ]; then
+        ROOT_SOL_DE="${MAGISK_DE_DESC}, ${ZYGISKSU_DE_DESC}"
+    elif [ -n "$ZYGISKSU_DE_DESC" ]; then
+        ROOT_SOL_DE="${ZYGISKSU_DE_DESC}"
+    elif [ -n "$MAGISK_DE_DESC" ]; then
+        ROOT_SOL_DE="${MAGISK_DE_DESC}"
+    else
+        ROOT_SOL_DE=""
+    fi
+
 }
 
 install_env_check() {
 
     MAGISK_BRANCH_NAME="Official"
     ROOT_SOL="Magisk"
+    ROOT_SOL_COUNT=0
 
-    if ! is_kernelsu && ! is_apatch && ! is_magisk; then
+    is_kernelsu && ROOT_SOL_COUNT=$((ROOT_SOL_COUNT + 1))
+    is_apatch && ROOT_SOL_COUNT=$((ROOT_SOL_COUNT + 1))
+    is_magisk && ROOT_SOL_COUNT=$((ROOT_SOL_COUNT + 1))
+
+    if [ "$DETECT_KSU" = "true" ]; then
+        ROOT_SOL_DETAIL="KernelSU (kernel:$KSU_KERNEL_VER_CODE, ksud:$KSU_VER_CODE)"
+        if [ "$ROOT_SOL_COUNT" -gt 1 ]; then
+            ROOT_SOL="Multiple"
+            if [ "$DETECT_APATCH" = "true" ] && [ "$DETECT_MAGISK" = "true" ]; then
+                ROOT_SOL_DETAIL="Multiple (${DETECT_MAGISK_DETAIL};${DETECT_KSU_DETAIL};${DETECT_APATCH_DETAIL})"
+            elif [ "$DETECT_APATCH" = "true" ]; then
+                ROOT_SOL_DETAIL="Multiple (${DETECT_KSU_DETAIL};${DETECT_APATCH_DETAIL})"
+            elif [ "$DETECT_MAGISK" = "true" ]; then
+                ROOT_SOL_DETAIL="Multiple (${DETECT_MAGISK_DETAIL};${DETECT_KSU_DETAIL})"
+            fi
+        elif [ "$ROOT_SOL_COUNT" -eq 1 ]; then
+            ROOT_SOL="KernelSU"
+        fi
+    elif [ "$DETECT_APATCH" = "true" ]; then
+        ROOT_SOL_DETAIL="APatch ($APATCH_VER_CODE)"
+        if [ "$ROOT_SOL_COUNT" -gt 1 ] && [ "$DETECT_MAGISK" = "true" ]; then
+            ROOT_SOL="Multiple"
+            ROOT_SOL_DETAIL="Multiple (${DETECT_MAGISK_DETAIL};${DETECT_APATCH_DETAIL})"
+        elif [ "$ROOT_SOL_COUNT" -eq 1 ]; then
+            ROOT_SOL="APatch"
+        fi
+    elif [ "$DETECT_MAGISK" = "true" ]; then
+        ROOT_SOL="Magisk"
+        ROOT_SOL_DETAIL="$MAGISK_BRANCH_NAME (${MAGISK_VER_CODE:-$MAGISK_V_VER_CODE})"
+    fi
+
+    if [ "$ROOT_SOL_COUNT" -lt 1 ]; then
         is_recovery
     fi
-}
 
+}
 
 module_intro() {
 
@@ -77,6 +152,7 @@ module_intro() {
     logowl "By $MOD_AUTHOR"
     logowl "Version: $MOD_VER"
     logowl "Root solution: $ROOT_SOL"
+    logowl "Current version: $ROOT_SOL_DETAIL"
     logowl "Current time stamp: $(date +"%Y-%m-%d %H:%M:%S")"
     logowl "Current module dir: $MODDIR"
     print_line
@@ -92,17 +168,17 @@ init_logowl() {
     fi
 
     if [ ! -d "$LOG_DIR" ]; then
-        logowl "Log dir does NOT exist"
+        [ "$DEBUG" = true ] && logowl "Log dir does NOT exist"
         mkdir -p "$LOG_DIR" || {
             logowl "Failed to create $LOG_DIR" "ERROR" >&2
             return 2
         }
-        logowl "Created $LOG_DIR"
+        [ "$DEBUG" = true ] && logowl "Created $LOG_DIR"
     else
-        logowl "$LOG_DIR already exists"
+        [ "$DEBUG" = true ] && logowl "$LOG_DIR exists already"
     fi
 
-    logowl "Logowl initialized"
+    [ "$DEBUG" = true ] && logowl "logowl initialized"
 
 }
 
@@ -119,7 +195,7 @@ logowl() {
     case "$LOG_LEVEL" in
         "TIPS") LOG_LEVEL="*" ;;
         "WARN") LOG_LEVEL="- Warn:" ;;
-        "ERROR") LOG_LEVEL="! ERROR:" ;;
+        "ERROR") LOG_LEVEL="! Error:" ;;
         "FATAL") LOG_LEVEL="× FATAL:" ;;
         "SPACE") LOG_LEVEL=" " ;;
         "NONE") LOG_LEVEL="_" ;;
@@ -127,7 +203,7 @@ logowl() {
     esac
 
     if [ -n "$LOG_FILE" ]; then
-        if [ "$LOG_LEVEL" = "! ERROR:" ] || [ "$LOG_LEVEL" = "× FATAL:" ]; then
+        if [ "$LOG_LEVEL" = "! Error:" ] || [ "$LOG_LEVEL" = "× FATAL:" ]; then
             echo "--------------------------------------------------------------------------------------------------------" >> "$LOG_FILE"
             echo "$LOG_LEVEL $LOG_MSG" >> "$LOG_FILE"
             echo "--------------------------------------------------------------------------------------------------------" >> "$LOG_FILE"
@@ -138,7 +214,7 @@ logowl() {
         fi
     else
         if command -v ui_print >/dev/null 2>&1 && [ "$BOOTMODE" ]; then
-            if [ "$LOG_LEVEL" = "! ERROR:" ] || [ "$LOG_LEVEL" = "× FATAL:" ]; then
+            if [ "$LOG_LEVEL" = "! Error:" ] || [ "$LOG_LEVEL" = "× FATAL:" ]; then
                 ui_print "--------------------------------------------------------------------------------------------------------"
                 ui_print "$LOG_LEVEL $LOG_MSG"
                 ui_print "--------------------------------------------------------------------------------------------------------"
@@ -166,7 +242,7 @@ init_variables() {
     config_file="$2"
 
     if [ ! -f "$config_file" ]; then
-        logowl "Configuration file $config_file does NOT exist" "ERROR" >&2
+        logowl "Config file $config_file does NOT exist" "ERROR" >&2
         return 1
     fi
 
@@ -227,11 +303,11 @@ init_variables() {
     case $awk_exit_status in
         1)
             logowl "Key '$key' not found or unclosed quote in $config_file" "ERROR" >&2
-            return 1
+            return 5
             ;;
         0)  ;;
         *)  logowl "Error processing key '$key' in $config_file" "ERROR" >&2
-            return 1
+            return 6
             ;;
     esac
 
@@ -241,8 +317,7 @@ init_variables() {
         echo "$value"
         return 0
     else
-        result=$?
-        return "$result"
+        return $?
     fi
 }
 
@@ -251,35 +326,40 @@ check_value_safety(){
     key="$1"
     value="$2"
 
-    if [ -z "$value" ]; then
-        logowl "Detect empty value (code: 1)" "WARN"
+    if [ -z "$key" ]; then
+        logowl "Variable is NOT ordered! (code: 1)" "ERROR"
         return 1
+    fi
+
+    if [ -z "$value" ]; then
+        logowl "Detect empty value (code: 2)" "WARN"
+        return 2
     fi
 
     value=$(printf "%s" "$value" | sed 's/'\''/'\\\\'\'''\''/g' | sed 's/[$;&|<>`"()]/\\&/g')
 
-    if [ "$value" = "true" ] || [ "$value" = "false" ]; then
+    if [ "$value" = true ] || [ "$value" = false ]; then
         logowl "Verified $key=$value (boolean)" "TIPS"
         return 0
     fi
 
     first_char=$(printf '%s' "$value" | cut -c1)
     if [ "$first_char" = "#" ]; then
-        logowl "Detect comment symbol (code: 2)" "WARN"
-        return 2
+        logowl "Detect comment symbol (code: 3)" "WARN"
+        return 3
     fi
 
     value=$(echo "$value" | cut -d'#' -f1 | xargs)
 
-    regex='^[a-zA-Z0-9/_\. -]*$'
+    regex='^[a-zA-Z0-9/_\. @-]*$'
     dangerous_chars='[`$();|<>]'
 
     if echo "$value" | grep -Eq "$dangerous_chars"; then
-        logowl "Key '$key' contains potential dangerous characters" "ERROR" >&2
+        logowl "Variable '$key' contains potential dangerous characters" "WARN" >&2
         return 3
     fi
     if ! echo "$value" | grep -Eq "$regex"; then
-        logowl "Key '$key' contains illegal characters" "WARN" >&2
+        logowl "Variable '$key' contains illegal characters" "WARN" >&2
         return 4
     fi
 
@@ -295,59 +375,65 @@ verify_variables() {
     default_value="${4:-}"
     script_var_name=$(echo "$config_var_name" | tr '[:lower:]' '[:upper:]')
 
-    if [ -n "$config_var_value" ] && echo "$config_var_value" | grep -qE "$validation_pattern"; then
+    if [ -z "$config_var_name" ] || [ -z "$config_var_value" ] || [ -z "$validation_pattern" ]; then
+        logowl "Variable name or value or pattern is NOT ordered!" "WARN"
+        return 1    
+    elif echo "$config_var_value" | grep -qE "$validation_pattern"; then
         export "$script_var_name"="$config_var_value"
         logowl "Set $script_var_name=$config_var_value" "TIPS"
+        return $result_export_var
     else
-        logowl "Config var value is empty or does NOT match the pattern" "WARN"
-        logowl "Unavailable var: $script_var_name=$config_var_value"
-
+        logowl "Variable value does NOT match the pattern" "WARN"
+        logowl "Invalid variable: $script_var_name=$config_var_value" "WARN"
         if [ -n "$default_value" ]; then
             if eval "[ -z \"\${$script_var_name+x}\" ]"; then
-                logowl "Using default value for $script_var_name: $default_value" "TIPS"
+                logowl "Set default value $script_var_name=$default_value" "TIPS"
                 export "$script_var_name"="$default_value"
             else
-                logowl "Variable $script_var_name already set, skipping default value" "WARN"
+                logowl "Variable $script_var_name is set already" "WARN"
             fi
         else
-            logowl "No default value provided for $script_var_name, keeping its current state" "TIPS"
+            logowl "No default value provided for $script_var_name" "WARN"
         fi
     fi
 }
+
 
 update_config_value() {
 
     key_name="$1"
     key_value="$2"
     file_path="$3"
+    keep_quiet="${4:-false}"
 
     if [ -z "$key_name" ] || [ -z "$key_value" ] || [ -z "$file_path" ]; then
-        logowl "Key name/value/file path is NOT provided yet!" "ERROR"
+        [ "$keep_quiet" = false ] && logowl "Key name/value/file path is NOT provided yet!" "ERROR"
         return 1
     elif [ ! -f "$file_path" ]; then
-        logowl "$file_path is NOT a valid file!" "ERROR"
+        [ "$keep_quiet" = false ] && logowl "$file_path is NOT a valid file!" "ERROR"
         return 2
     fi
-    logowl "Update $key_name: $key_value"
     sed -i "/^${key_name}=/c\\${key_name}=${key_value}" "$file_path"
 
     result_update_value=$?
-    if [ $result_update_value -eq 0 ]; then
-        logowl "Succeeded (code: $result_update_value)"
+    if [ "$result_update_value" -eq 0 ]; then
+        [ "$keep_quiet" = false ] && logowl "Update $key_name=$key_value"
+        return 0
     else
-        logowl "Failed to update $key_name=$key_value into $file_path (code: $result_update_value)" "WARN"
+        return "$result_update_value"
     fi
 
 }
 
 debug_print_values() {
 
+    [ "$DEBUG" = false ] && return 0
+
     print_line
     logowl "All Environment Variables"
     print_line
     env | sed 's/^/- /'
     print_line
-
     logowl "All Shell Variables"
     print_line
     ( set -o posix; set ) | sed 's/^/- /'
@@ -366,22 +452,26 @@ file_compare() {
     file_a="$1"
     file_b="$2"
     if [ -z "$file_a" ] || [ -z "$file_b" ]; then
-      logowl "Value a or value b does NOT exist!" "WARN"
-      return 2
+        [ "$DEBUG" = true ] && logowl "Value a or value b does NOT exist!" "WARN"
+        return 2
     fi
     if [ ! -f "$file_a" ]; then
-      logowl "a is NOT a file!" "WARN"
-      return 3
+        [ "$DEBUG" = true ] && logowl "a is NOT a file!" "WARN"
+        return 3
     fi
     if [ ! -f "$file_b" ]; then
-      logowl "b is NOT a file!" "WARN"
-      return 3
+        [ "$DEBUG" = true ] && logowl "b is NOT a file!" "WARN"
+        return 3
     fi
+    
     hash_file_a=$(sha256sum "$file_a" | awk '{print $1}')
     hash_file_b=$(sha256sum "$file_b" | awk '{print $1}')
+    
     if [ "$hash_file_a" == "$hash_file_b" ]; then
+        [ "$DEBUG" = true ] && logowl "File $file_a and $file_b are the same file"
         return 0
     else
+        [ "$DEBUG" = true ] && logowl "File $file_a and $file_b are the different file"
         return 1
     fi
 }
@@ -440,7 +530,7 @@ clean_old_logs() {
     files_max="$2"
     
     if [ -z "$log_dir" ] || [ ! -d "$log_dir" ]; then
-        logowl "$log_dir is not found or is not a directory!" "ERROR"
+        logowl "$log_dir is not found or is not a dir!" "ERROR"
         return
     fi
 
@@ -448,16 +538,75 @@ clean_old_logs() {
         files_max=30
     fi
 
+    logowl "Current log dir: $log_dir"
     files_count=$(ls -1 "$log_dir" | wc -l)
     if [ "$files_count" -gt "$files_max" ]; then
-        logowl "Detect too many log files" "WARN"
-        logowl "$files_count files, current max allowed: $files_max"
-        logowl "Clearing old logs"
+        logowl "Clear old logs ($files_count as max allowed $files_max)"
         ls -1t "$log_dir" | tail -n +$((files_max + 1)) | while read -r file; do
             rm -f "$log_dir/$file"
         done
-        logowl "Cleared!"
     else
-        logowl "Detect $files_count files in $log_dir"
+        logowl "Detect $files_count files in $log_dir (max allowed $files_max)"
     fi
+}
+
+set_permission() {
+
+    [ "$DEBUG" = true ] && logowl "chown $2:$3 $1 (code: $?)"
+    chown $2:$3 $1 || return 1
+    
+    [ "$DEBUG" = true ] && logowl "chmod $4 $1 (code: $?)"
+    chmod $4 $1 || return 1
+    
+    selinux_content=$5
+    [ -z "$selinux_content" ] && selinux_content=u:object_r:system_file:s0
+    [ -z "$selinux_content" ] && [ "$DEBUG" = true ] && logowl "chcon $selinux_content $1 (code: $?)"
+
+    chcon $selinux_content $1 || return 1
+
+}
+
+set_permission_recursive() {
+
+    [ "$DEBUG" = true ] && logowl "Set permission"
+
+    find $1 -type d 2>/dev/null | while read dir; do
+        set_permission $dir $2 $3 $4 $6
+        [ "$DEBUG" = true ] && logowl "Execute for dir: $dir (code: $?)"
+    done
+    find $1 -type f -o -type l 2>/dev/null | while read file; do
+        set_permission $file $2 $3 $5 $6
+        [ "$DEBUG" = true ] && logowl "Execute for file: $file (code: $?)"
+    done
+
+}
+
+clean_duplicate_items() {
+    filed=$1
+
+    if [ -z "$filed" ]; then
+        logowl "File is NOT provided!" "ERROR"
+        return 1
+    elif [ ! -f "$filed" ]; then
+        logowl "$filed does NOT exist or is NOT a file!" "ERROR"
+        return 2
+    fi
+
+    [ "$DEBUG" = true ] && logowl "filed: ${filed}"
+    [ "$DEBUG" = true ] && logowl "filed.tmp: ${filed}.tmp"
+
+    awk '!seen[$0]++' "$filed" > "${filed}.tmp"
+    mv "${filed}.tmp" "$filed"
+    return 0
+}
+
+debug_get_prop() {
+    prop_name=$1
+
+    if [ -z "$prop_name" ]; then
+        logowl "$prop_name does NOT exist!" "WARN"
+        return 1
+    fi
+    logowl "$prop_name=$(getprop "$prop_name")"
+    return 0
 }
