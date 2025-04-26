@@ -218,7 +218,7 @@ security_patch_info_disguiser() {
             ts_sp_config_simple
         fi
     elif [ ! -f "$TRICKY_STORE_CONFIG_FILE" ] && [ -f "$CONFIG_FILE" ]; then
-        logowl "Tricky Store security patch config file ($TRICKY_STORE_CONFIG_FILE) does NOT exist!" "ERROR"
+        logowl "Tricky Store security patch config file ($TRICKY_STORE_CONFIG_FILE) does NOT exist!" "WARN"
         logowl "$MOD_NAME will try to fetch config from $CONFIG_FILE"
         TRICKY_STORE_CONFIG_FILE="$CONFIG_FILE"
         ts_sp_config_advanced
@@ -404,14 +404,15 @@ custom_addon_d_remove() {
 
 init_logowl "$LOG_DIR"
 module_intro >> "$LOG_FILE"
-config_loader
 show_system_info
+config_loader
 print_line
-logowl "Starting post-fs-data.sh"
+logowl "Start post-fs-data.sh"
 print_line
 logowl "Before:"
 debug_props_info
 security_patch_info_disguiser
+print_line
 logowl "After:"
 debug_props_info
 custom_install_recovery_script_remove
