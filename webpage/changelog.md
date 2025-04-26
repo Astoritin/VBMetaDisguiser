@@ -3,7 +3,14 @@
 一个用于伪装 VBMeta 属性、加密状态和系统安全补丁日期的 Magisk 模块
 / A Magisk module to disguise the props of vbmeta, encryption status and security patch date
 
-## 变更日志 / Changelog
+### 1.2.8
+
+- Fix some logical loophole
+- 修复部分逻辑漏洞
+- Sync the changes of aautilities.sh in Bloatware Slayer
+- 同步 Bloatware Slayer 的 aautilities.sh 中的变动
+- update module description
+- 更新模块描述
 
 ### 1.2.7
 
