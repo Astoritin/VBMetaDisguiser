@@ -2,10 +2,11 @@
 MODDIR=${0%/*}
 
 CONFIG_DIR="/data/adb/vbmetadisguiser"
+DEBUG=false
 
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 LOG_DIR="$CONFIG_DIR/logs"
-LOG_FILE="$LOG_DIR/vd_log_core_b_$(date +"%Y-%m-%d_%H-%M-%S").log"
+LOG_FILE="$LOG_DIR/vd_core_vb_$(date +"%Y-%m-%d_%H-%M-%S").log"
 
 MODULE_PROP="${MODDIR}/module.prop"
 MOD_NAME="$(sed -n 's/^name=\(.*\)/\1/p' "$MODULE_PROP")"
@@ -21,30 +22,32 @@ BOOT_HASH="00000000000000000000000000000000"
 debug_props_info() {
 
     print_line
-    logowl "ro.boot.vbmeta.device_state=$(getprop ro.boot.vbmeta.device_state)"
-    logowl "ro.boot.vbmeta.avb_version=$(getprop ro.boot.vbmeta.avb_version)"
-    logowl "ro.boot.vbmeta.hash_alg=$(getprop ro.boot.vbmeta.hash_alg)"
-    logowl "ro.boot.vbmeta.size=$(getprop ro.boot.vbmeta.size)"
-    logowl "ro.boot.vbmeta.digest=$(getprop ro.boot.vbmeta.digest)"
+    debug_get_prop "ro.boot.vbmeta.device_state"
+    debug_get_prop "ro.boot.vbmeta.avb_version"
+    debug_get_prop "ro.boot.vbmeta.hash_alg"
+    debug_get_prop "ro.boot.vbmeta.size"
+    debug_get_prop "ro.boot.vbmeta.digest"
     print_line
-    logowl "ro.crypto.state=$(getprop ro.crypto.state)"
+    debug_get_prop "ro.crypto.state"
     print_line
-    logowl "ro.build.version.security_patch=$(getprop ro.build.version.security_patch)"
-    logowl "ro.system.build.security_patch=$(getprop ro.system.build.security_patch)"
-    logowl "ro.vendor.build.security_patch=$(getprop ro.vendor.build.security_patch)"
+    debug_get_prop "ro.build.version.security_patch"
+    debug_get_prop "ro.system.build.security_patch"
+    debug_get_prop "ro.vendor.build.security_patch"
     print_line
 
 }
 
 config_loader() {
 
-    logowl "Loading config"
+    logowl "Load config"
     
+    debug=$(init_variables "debug" "$CONFIG_FILE")
     avb_version=$(init_variables "avb_version" "$CONFIG_FILE")
     vbmeta_size=$(init_variables "vbmeta_size" "$CONFIG_FILE")
     boot_hash=$(init_variables "boot_hash" "$CONFIG_FILE")
     crypto_state=$(init_variables "crypto_state" "$CONFIG_FILE")
 
+    verify_variables "debug" "$debug" "^(true|false)$"
     verify_variables "avb_version" "$avb_version" "^[1-9][0-9]*\.[0-9]*$|^[1-9][0-9]*$"
     verify_variables "vbmeta_size" "$vbmeta_size" "^[1-9][0-9]*$"
     verify_variables "boot_hash" "$boot_hash" "^[0-9a-fA-F]{64}$"
@@ -53,6 +56,8 @@ config_loader() {
 }
 
 vbmeta_disguiser() {
+
+    logowl "Disguise VBMeta partition status"
 
     resetprop -n "ro.boot.vbmeta.device_state" "locked"
     resetprop -n "ro.boot.vbmeta.hash_alg" "sha256"
@@ -67,18 +72,19 @@ vbmeta_disguiser() {
 
 encryption_disguiser(){
 
-    if [ -n "$CRYPTO_STATE" ]; then
-        resetprop -n "ro.crypto.state" "$CRYPTO_STATE"
-    fi
+    logowl "Disguise Data partition encryption state"
+
+    [ -n "$CRYPTO_STATE" ] && resetprop -n "ro.crypto.state" "$CRYPTO_STATE"
 
 }
 
 module_status_update() {
-    
-    logowl "Updating module status"
-    
+
+    logowl "Update module status"
+
+    update_count=0    
     vbmeta_version=$(getprop 'ro.boot.vbmeta.avb_version')
-    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' | cut -c1-18 | tr '[:lower:]' '[:upper:]')
+    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' | cut -c1-12 | tr '[:lower:]' '[:upper:]')
     ellipsis="(...)"
     vbmeta_digest="${vbmeta_digest}${ellipsis}"
     vbmeta_hash_alg=$(getprop 'ro.boot.vbmeta.hash_alg' | tr '[:lower:]' '[:upper:]')
@@ -90,18 +96,16 @@ module_status_update() {
     if [ -z "$vbmeta_digest" ] || echo "$vbmeta_digest" | grep -qE '^0+$'; then
         desc_vbmeta="❓VBMeta Hash: N/A"
     else
-        desc_vbmeta="✅VBMeta Hash: $vbmeta_digest ($vbmeta_hash_alg)"
+        desc_vbmeta="VBMeta Hash: $vbmeta_digest ($vbmeta_hash_alg)"
+        update_count=$((update_count + 1))
     fi
     
-    desc_avb="✅AVB ${vbmeta_version:-N/A} (${device_state:-N/A})"
+    desc_avb="AVB ${vbmeta_version:-N/A} (${device_state:-N/A})"
 
-    if [ "$crypto_state" = "encrypted" ]; then
-        desc_crypto="🔒"
-    elif [ "$crypto_state" = "unencrypted" ]; then
-        desc_crypto="🔓"
-    elif [ "$crypto_state" = "unsupported" ]; then
-        desc_crypto="❌"
-    fi
+    [ "$crypto_state" = "encrypted" ] && desc_crypto="🔒"
+    [ "$crypto_state" = "unencrypted" ] && desc_crypto="🔓"
+    [ "$crypto_state" = "unsupported" ] && desc_crypto="❌"
+    [ -n "$desc_crypto" ] && update_count=$((update_count + 1))
     desc_crypto="${desc_crypto}Data partition: $crypto_state"
 
     if [ ! -e "$TRICKY_STORE_CONFIG_FILE" ] && [ ! -e "$CONFIG_FILE" ]; then
@@ -111,12 +115,20 @@ module_status_update() {
     elif [ ! -s "$TRICKY_STORE_CONFIG_FILE" ] && [ ! -s "$CONFIG_FILE" ]; then
         desc_ts_sp="❓Security patch: N/A"
     else
-        desc_ts_sp="✅Security patch: $security_patch"
+        desc_ts_sp="Security patch: $security_patch"
+        update_count=$((update_count + 1))
     fi
 
-    DESCRIPTION="[${desc_vbmeta}, ${desc_avb}, ${desc_ts_sp}, ${desc_crypto}] A module to disguise the props of vbmeta, security patch date and encryption status✨"
-
-    update_config_value "description" "$DESCRIPTION" "$MODULE_PROP"
+    desc_active=""
+    if [ "$update_count" -gt 0 ]; then
+        desc_active="✅Done."
+    else
+        desc_active="❌No effect."
+    fi
+    
+    [ -n "$desc_active" ] && DESCRIPTION="[$desc_active $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] A module to disguise the props of vbmeta, security patch date and encryption status."
+    [ -z "$desc_active" ] && DESCRIPTION="[$desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] A module to disguise the props of vbmeta, security patch date and encryption status."
+    [ -n "$DESCRIPTION" ] && update_config_value "description" "$DESCRIPTION" "$MODULE_PROP"
 
 } >> "$LOG_FILE" 2>&1
 
@@ -126,7 +138,7 @@ init_logowl "$LOG_DIR"
 module_intro >> "$LOG_FILE"
 show_system_info
 print_line
-logowl "Starting service.sh"
+logowl "Start service.sh"
 print_line
 config_loader
 logowl "Before"
