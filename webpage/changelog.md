@@ -11,6 +11,7 @@
 - 同步 Bloatware Slayer 的 aautilities.sh 中的变动
 - update module description
 - 更新模块描述
+- SHA256: `07caba7b74c51b77c0c03862d16460a58095c9d98183c7f7f5672684f04ffe1b`
 
 ### 1.2.7
 
