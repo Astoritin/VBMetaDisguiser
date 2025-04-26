@@ -14,9 +14,7 @@ if [ "$API" -lt 27 ]; then
     about "since VBMeta props does NOT exist in these old Android version!"
 fi
 
-if [ ! -d "$VERIFY_DIR" ]; then
-    mkdir -p "$VERIFY_DIR"
-fi
+[ ! -d "$VERIFY_DIR" ] && mkdir -p "$VERIFY_DIR"
 
 echo "- Extract aautilities.sh"
 unzip -o "$ZIPFILE" 'aautilities.sh' -d "$TMPDIR" >&2
@@ -29,13 +27,14 @@ fi
 
 logowl "Setting up $MOD_NAME"
 logowl "Version: $MOD_VER"
+init_logowl "$LOG_DIR"
 install_env_check
-init_logowl "$LOG_DIR" > /dev/null 2>&1
-clean_old_logs "$LOG_DIR" 20 > /dev/null 2>&1
 show_system_info
+logowl "Install from $ROOT_SOL app"
 logowl "Essential checks"
 extract "$ZIPFILE" 'aautilities.sh' "$VERIFY_DIR"
 extract "$ZIPFILE" 'customize.sh' "$VERIFY_DIR"
+clean_old_logs "$LOG_DIR" 20
 logowl "Extract module files"
 extract "$ZIPFILE" 'aautilities.sh' "$MODPATH"
 extract "$ZIPFILE" 'module.prop' "$MODPATH"
@@ -47,12 +46,13 @@ if [ ! -f "$CONFIG_DIR/vbmeta.conf" ]; then
     logowl "vbmeta.conf does NOT exist"
     extract "$ZIPFILE" 'vbmeta.conf' "$CONFIG_DIR"    
 else
-    logowl "Detect vbmeta.conf already exists"
+    logowl "vbmeta.conf already exists"
     logowl "vbmeta.conf will NOT be overwritten"
 fi
 if [ -n "$VERIFY_DIR" ] && [ -d "$VERIFY_DIR" ] && [ "$VERIFY_DIR" != "/" ]; then
     rm -rf "$VERIFY_DIR"
 fi
-logowl "Setting permissions"
-set_perm_recursive "$MODPATH" 0 0 0755 0644
+set_permission_recursive "$MODPATH" 0 0 0755 0644
 logowl "Welcome to use $MOD_NAME!"
+DESCRIPTION="[🔄Reboot to take effect.] A module to disguise the props of vbmeta, security patch date and encryption status."
+update_config_value "description" "$DESCRIPTION" "$MODPATH/module.prop" "true"
