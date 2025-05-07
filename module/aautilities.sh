@@ -59,9 +59,9 @@ magisk_enforce_denylist_status() {
         MAGISK_DE_STATUS=$(magisk --sqlite "SELECT value FROM settings WHERE key='denylist';" | sed 's/^.*=\([01]\)$/\1/')
         if [ -n "$MAGISK_DE_STATUS" ]; then
             if [ "$MAGISK_DE_STATUS" = "1" ]; then
-                MAGISK_DE_DESC="Enabled (Magisk)"
+                MAGISK_DE_DESC="ON (Magisk)"
             elif [ "$MAGISK_DE_STATUS" = "0" ]; then
-                MAGISK_DE_DESC="Disabled (Magisk)"
+                MAGISK_DE_DESC="OFF (Magisk)"
             fi
         fi
     else
@@ -76,9 +76,9 @@ zygisksu_enforce_denylist_status() {
         ZYGISKSU_DE_STATUS=$(znctl status | grep "enforce_denylist" | sed 's/^.*:\([01]\)$/\1/')
         if [ -n "$ZYGISKSU_DE_STATUS" ]; then
             if [ "$ZYGISKSU_DE_STATUS" = "1" ]; then
-                ZYGISKSU_DE_DESC="Enabled (ZN)"
+                ZYGISKSU_DE_DESC="ON (Zygisk Next)"
             elif [ "$ZYGISKSU_DE_STATUS" = "0" ]; then
-                ZYGISKSU_DE_DESC="Disabled (ZN)"
+                ZYGISKSU_DE_DESC="OFF (Zygisk Next)"
             fi
         fi
     else
@@ -97,6 +97,29 @@ enforce_denylist_desc() {
         ROOT_SOL_DE="${MAGISK_DE_DESC}"
     else
         ROOT_SOL_DE=""
+    fi
+
+}
+
+denylist_enforcing_status_update() {
+
+    MOD_DESC_DE_OLD="$1"
+
+    magisk_enforce_denylist_status
+    zygisksu_enforce_denylist_status
+    enforce_denylist_desc
+
+    if [ -n "$ROOT_SOL_DE" ]; then
+
+        [ -z "$MOD_DESC_DE_OLD" ] && MOD_DESC_TMP="$MOD_DESC_OLD"
+        [ -n "$MOD_DESC_DE_OLD" ] && MOD_DESC_TMP="$MOD_DESC_DE_OLD"
+
+        if echo "$MOD_DESC_TMP" | grep -q "🚫Enforce DenyList: "; then
+            MOD_DESC_NEW=$(echo "$MOD_DESC_TMP" | sed -E "s/(🚫Enforce DenyList: )[^]]*/\1${ROOT_SOL_DE}/")
+        else
+            MOD_DESC_NEW=$(echo "$MOD_DESC_TMP" | sed -E 's/\]/, 🚫Enforce DenyList: '"${ROOT_SOL_DE}"'\]/')
+        fi
+        update_config_value "description" "$MOD_DESC_NEW" "$MODULE_PROP" "true"
     fi
 
 }
@@ -151,8 +174,7 @@ module_intro() {
     logowl "$MOD_NAME"
     logowl "By $MOD_AUTHOR"
     logowl "Version: $MOD_VER"
-    logowl "Root solution: $ROOT_SOL"
-    logowl "Current version: $ROOT_SOL_DETAIL"
+    logowl "Root solution: $ROOT_SOL_DETAIL"
     logowl "Current time stamp: $(date +"%Y-%m-%d %H:%M:%S")"
     logowl "Current module dir: $MODDIR"
     print_line
@@ -279,7 +301,7 @@ init_variables() {
                         }
                     }
                     if (in_quote) {
-                        print "Error: Unclosed quote for key " key > "/dev/stderr"
+                        print "! Error: Unclosed quote for key " key > "/dev/stderr"
                         exit 1
                     }
                 }
@@ -332,20 +354,20 @@ check_value_safety(){
     fi
 
     if [ -z "$value" ]; then
-        logowl "Detect empty value (code: 2)" "WARN"
+        [ "$DEBUG" = true ] && logowl "Detect empty value (code: 2)"
         return 2
     fi
 
     value=$(printf "%s" "$value" | sed 's/'\''/'\\\\'\'''\''/g' | sed 's/[$;&|<>`"()]/\\&/g')
 
     if [ "$value" = true ] || [ "$value" = false ]; then
-        logowl "Verified $key=$value (boolean)" "TIPS"
+        logowl "Verified $key=$value (boolean)"
         return 0
     fi
 
     first_char=$(printf '%s' "$value" | cut -c1)
     if [ "$first_char" = "#" ]; then
-        logowl "Detect comment symbol (code: 3)" "WARN"
+        [ "$DEBUG" = true ] && logowl "Detect comment symbol (code: 3)"
         return 3
     fi
 
@@ -363,7 +385,7 @@ check_value_safety(){
         return 4
     fi
 
-    logowl "Verified $key=$value" "TIPS"
+    logowl "Verified $key=$value"
     return 0
 }
 
@@ -601,10 +623,11 @@ clean_duplicate_items() {
 }
 
 debug_get_prop() {
+
     prop_name=$1
 
     if [ -z "$prop_name" ]; then
-        logowl "$prop_name does NOT exist!" "WARN"
+        logowl "Property name does NOT exist!" "WARN"
         return 1
     fi
     logowl "$prop_name=$(getprop "$prop_name")"
