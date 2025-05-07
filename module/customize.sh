@@ -8,12 +8,6 @@ VERIFY_DIR="$TMPDIR/.aa_verify"
 MOD_NAME="$(grep_prop name "${TMPDIR}/module.prop")"
 MOD_VER="$(grep_prop version "${TMPDIR}/module.prop") ($(grep_prop versionCode "${TMPDIR}/module.prop"))"
 
-if [ "$API" -lt 27 ]; then
-    logowl "Detect Android version is lower than 8 (oreo)!" "ERROR"
-    logowl "$MOD_NAME does not support Android 8 and lower"
-    about "since VBMeta props does NOT exist in these old Android version!"
-fi
-
 [ ! -d "$VERIFY_DIR" ] && mkdir -p "$VERIFY_DIR"
 
 echo "- Extract aautilities.sh"
@@ -54,5 +48,5 @@ if [ -n "$VERIFY_DIR" ] && [ -d "$VERIFY_DIR" ] && [ "$VERIFY_DIR" != "/" ]; the
 fi
 set_permission_recursive "$MODPATH" 0 0 0755 0644
 logowl "Welcome to use $MOD_NAME!"
-DESCRIPTION="[🔄Reboot to take effect.] A module to disguise the props of vbmeta, security patch date and encryption status."
+DESCRIPTION="[⏳Reboot to take effect.] A Magisk module to disguise the props of vbmeta, security patch date and encryption status."
 update_config_value "description" "$DESCRIPTION" "$MODPATH/module.prop" "true"
