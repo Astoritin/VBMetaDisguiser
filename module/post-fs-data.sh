@@ -6,7 +6,7 @@ DEBUG=false
 
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 LOG_DIR="$CONFIG_DIR/logs"
-LOG_FILE="$LOG_DIR/vd_core_sp_$(date +"%Y-%m-%d_%H-%M-%S").log"
+LOG_FILE="$LOG_DIR/vd_spcfg_$(date +"%Y-%m-%d_%H-%M-%S").log"
 
 MODULE_PROP="${MODDIR}/module.prop"
 MOD_NAME="$(sed -n 's/^name=\(.*\)/\1/p' "$MODULE_PROP")"
@@ -41,7 +41,7 @@ config_loader() {
             logowl "Make Node mode support is present"
             MN_SUPPORT=true
         else
-            logowl "Make Node mode requires Magisk version 28102+ !" "WARN"
+            logowl "Make Node mode requires Magisk version 28102+!" "WARN"
             logowl "$MOD_NAME will revert to Magisk Replace mode"
             MN_SUPPORT=false
         fi
@@ -129,7 +129,7 @@ mirror_make_node() {
 
 ts_sp_config_simple() {
 
-    logowl "Load security patch config from TrickyStore (simple mode)"
+    logowl "Load security patch config (simple mode)"
 
     patch_level=$(grep -v '^#' "$TRICKY_STORE_CONFIG_FILE" | grep -Eo '[0-9]+' | head -n 1)
 
@@ -149,10 +149,11 @@ ts_sp_config_simple() {
 }
 
 ts_sp_config_advanced() {
-    logowl "Load security patch config from TrickyStore (advanced mode)"
+    logowl "Load security patch config (advanced mode)"
     ts_all=$(init_variables "all" "$TRICKY_STORE_CONFIG_FILE")
     
     if [ -z "$ts_all" ]; then
+
         ts_system=$(init_variables "system" "$TRICKY_STORE_CONFIG_FILE")
         ts_boot=$(init_variables "boot" "$TRICKY_STORE_CONFIG_FILE")
         ts_vendor=$(init_variables "vendor" "$TRICKY_STORE_CONFIG_FILE")
@@ -161,26 +162,25 @@ ts_sp_config_advanced() {
         [ -n "$ts_boot" ] && verify_variables "ts_boot" "$ts_boot" "^([0-9]{6}|[0-9]{8}|[0-9]{4}-[0-9]{2}-[0-9]{2}|yes|no)$"
         [ -n "$ts_vendor" ] && verify_variables "ts_vendor" "$ts_vendor" "^([0-9]{6}|[0-9]{8}|[0-9]{4}-[0-9]{2}-[0-9]{2}|yes|no)$"
         
-        
-        if [ "$TS_BOOT" != "yes" ] && [ "$TS_BOOT" != "no" ]; then
-            date_format_86 "TS_BOOT" "$TS_BOOT"
-        fi
-        if [ "$TS_VENDOR" != "yes" ] && [ "$TS_VENDOR" != "no" ]; then
-            date_format_86 "TS_VENDOR" "$TS_VENDOR"
-        fi
+        [ -n "$TS_BOOT" ] && [ "$TS_BOOT" != "yes" ] && [ "$TS_BOOT" != "no" ] && date_format_86 "TS_BOOT" "$TS_BOOT"
+        [ -n "$TS_VENDOR" ] && [ "$TS_VENDOR" != "yes" ] && [ "$TS_VENDOR" != "no" ] && date_format_86 "TS_VENDOR" "$TS_VENDOR"
+    
     else
+
         [ -n "$ts_all" ] && verify_variables "ts_all" "$ts_all" "^([0-9]{6}|[0-9]{8}|[0-9]{4}-[0-9]{2}-[0-9]{2})$"
-        date_format_86 "TS_ALL" "$TS_ALL"
+        [ -n "$TS_ALL" ] && date_format_86 "TS_ALL" "$TS_ALL"
+
     fi
 
     if [ -n "$TS_ALL" ]; then
+
         resetprop -n "ro.build.version.security_patch" "$TS_ALL"
         resetprop -n "ro.vendor.build.security_patch" "$TS_ALL"
         resetprop -n "ro.system.build.security_patch" "$TS_ALL"
+
     else
-        if [ -n "$TS_SYSTEM" ]; then
-            resetprop -n "ro.build.version.security_patch" "$TS_SYSTEM"
-        fi
+
+        [ -n "$TS_SYSTEM" ] && resetprop -n "ro.build.version.security_patch" "$TS_SYSTEM"
 
         if [ -n "$TS_BOOT" ]; then
             if [ "$TS_BOOT" = "yes" ]; then
