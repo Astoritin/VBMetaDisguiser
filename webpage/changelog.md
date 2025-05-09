@@ -10,7 +10,7 @@
 - Fix some logical problems
 - 修复部分逻辑问题
 - Add soft bootloader status spoof for users not using Shamiko or Sensitive Props
-- 为不使用 Shamiko 或者 Sensitive Props 增加弱 bootloader 状态伪装功能
+- 为不使用 Shamiko 或者 Sensitive Props 的用户增加弱 bootloader 状态伪装功能
 
 ### 1.2.8
 
