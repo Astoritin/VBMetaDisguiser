@@ -6,14 +6,17 @@ DEBUG=false
 
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 LOG_DIR="$CONFIG_DIR/logs"
-LOG_FILE="$LOG_DIR/vd_core_vb_$(date +"%Y-%m-%d_%H-%M-%S").log"
+LOG_FILE="$LOG_DIR/vd_vbmetab_$(date +"%Y-%m-%d_%H-%M-%S").log"
 
 MODULE_PROP="${MODDIR}/module.prop"
 MOD_NAME="$(sed -n 's/^name=\(.*\)/\1/p' "$MODULE_PROP")"
 MOD_AUTHOR="$(sed -n 's/^author=\(.*\)/\1/p' "$MODULE_PROP")"
 MOD_VER="$(sed -n 's/^version=\(.*\)/\1/p' "$MODULE_PROP") ($(sed -n 's/^versionCode=\(.*\)/\1/p' "$MODULE_PROP"))"
+MOD_ROOT_DIR=$(dirname "$MODDIR")
 
 TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
+SHAMIKO_DIR="${MOD_ROOT_DIR}/zygisk_shamiko"
+SENSITIVE_PROPS_DIR="${MOD_ROOT_DIR}/sensitive_props"
 
 AVB_VERSION="2.0"
 VBMETA_SIZE="8192"
@@ -37,6 +40,26 @@ debug_props_info() {
 
 }
 
+debug_contains_and_reset_prop() {
+
+    prop_name="$1"
+    prop_contains_keyword="$2"
+    prop_new_value="$3"
+
+    if [ -z "$prop_name" ] || [ -z "$prop_contains_keyword" ] || [ -z "$prop_new_value" ]; then
+        logowl "Required parameters is missing!" "ERROR"
+        return 1
+    fi
+
+    prop_current_value=$(resetprop "$prop_name")
+
+    if echo "$prop_current_value" | grep -q "$prop_contains_keyword"; then
+        resetprop "$prop_name" "$prop_new_value"
+        return 0
+    fi
+
+}
+
 config_loader() {
 
     logowl "Load config"
@@ -50,7 +73,7 @@ config_loader() {
     verify_variables "debug" "$debug" "^(true|false)$"
     verify_variables "avb_version" "$avb_version" "^[1-9][0-9]*\.[0-9]*$|^[1-9][0-9]*$"
     verify_variables "vbmeta_size" "$vbmeta_size" "^[1-9][0-9]*$"
-    verify_variables "boot_hash" "$boot_hash" "^[0-9a-fA-F]{64}$"
+    verify_variables "boot_hash" "$boot_hash" "^[0-9a-fA-F]+$"
     verify_variables "crypto_state" "$crypto_state" "^encrypted$|^unencrypted$|^unsupported$"
 
 }
@@ -80,6 +103,8 @@ encryption_disguiser(){
 
 module_status_update() {
 
+    desc_max=3
+
     logowl "Update module status"
 
     update_count=0    
@@ -96,7 +121,7 @@ module_status_update() {
     if [ -z "$vbmeta_digest" ] || echo "$vbmeta_digest" | grep -qE '^0+$'; then
         desc_vbmeta="❓VBMeta Hash: N/A"
     else
-        desc_vbmeta="VBMeta Hash: $vbmeta_digest ($vbmeta_hash_alg)"
+        desc_vbmeta="✅VBMeta Hash: $vbmeta_digest ($vbmeta_hash_alg)"
         update_count=$((update_count + 1))
     fi
     
@@ -115,22 +140,65 @@ module_status_update() {
     elif [ ! -s "$TRICKY_STORE_CONFIG_FILE" ] && [ ! -s "$CONFIG_FILE" ]; then
         desc_ts_sp="❓Security patch: N/A"
     else
-        desc_ts_sp="Security patch: $security_patch"
+        desc_ts_sp="✅Security patch: $security_patch"
         update_count=$((update_count + 1))
     fi
 
     desc_active=""
-    if [ "$update_count" -gt 0 ]; then
+    if [ "$update_count" -eq "$desc_max" ]; then
+        desc_active="✅All Done."
+    elif [ "$update_count" -gt 0 ]; then
         desc_active="✅Done."
     else
-        desc_active="❌No effect."
+        desc_active="❌No effect. Maybe something went wrong?"
     fi
     
-    [ -n "$desc_active" ] && DESCRIPTION="[$desc_active $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] A module to disguise the props of vbmeta, security patch date and encryption status."
-    [ -z "$desc_active" ] && DESCRIPTION="[$desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] A module to disguise the props of vbmeta, security patch date and encryption status."
-    [ -n "$DESCRIPTION" ] && update_config_value "description" "$DESCRIPTION" "$MODULE_PROP"
+    [ -n "$desc_active" ] && DESCRIPTION="[$desc_active $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] A Magisk module to disguise the props of vbmeta, security patch date and encryption status."
+    [ -n "$DESCRIPTION" ] && update_config_value "description" "$DESCRIPTION" "$MODULE_PROP" "true"
 
-} >> "$LOG_FILE" 2>&1
+}
+
+soft_bootloader_spoof() {
+
+    if [ -e "$SHAMIKO_DIR" ] || [ -e "$SENSITIVE_PROPS_DIR" ]; then
+        return 0
+    fi
+
+    logowl "Reset specific properties"
+
+    resetprop -n "ro.boot.vbmeta.device_state" "locked"
+    resetprop -n "ro.boot.verifiedbootstate" "green"
+    resetprop -n "ro.boot.flash.locked" "1"
+    resetprop -n "ro.boot.veritymode" "enforcing"
+    resetprop -n "ro.boot.warranty_bit" "0"
+    resetprop -n "ro.warranty_bit" "0"
+    resetprop -n "ro.debuggable" "0"
+    resetprop -n "ro.force.debuggable" "0"
+    resetprop -n "ro.secure" "1"
+    resetprop -n "ro.adb.secure" "1"
+    resetprop -n "ro.build.type" "user"
+    resetprop -n "ro.build.tags" "release-keys"
+    resetprop -n "ro.vendor.boot.warranty_bit" "0"
+    resetprop -n "ro.vendor.warranty_bit" "0"
+    resetprop -n "vendor.boot.vbmeta.device_state" "locked"
+    resetprop -n "vendor.boot.verifiedbootstate" "green"
+
+    resetprop -n "sys.oem_unlock_allowed" "0"
+    resetprop -n "ro.oem_unlock_supported" "0"
+
+    resetprop -n "ro.boot.realmebootstate" "green"
+    resetprop -n "ro.boot.realme.lockstate" "1"
+
+    resetprop -n "ro.secureboot.lockstate" "locked"
+
+    resetprop -n "init.svc.flash_recovery" "stopped"
+
+    debug_contains_and_reset_prop "ro.bootmode" "recovery" "unknown"
+    debug_contains_and_reset_prop "ro.boot.bootmode" "recovery" "unknown"
+    debug_contains_and_reset_prop "vendor.boot.bootmode" "recovery" "unknown"
+
+}
+
 
 . "$MODDIR/aautilities.sh"
 
@@ -140,13 +208,15 @@ show_system_info
 print_line
 logowl "Start service.sh"
 print_line
-config_loader
-logowl "Before"
+logowl "Before:"
 debug_props_info
+config_loader
 vbmeta_disguiser
 encryption_disguiser
 module_status_update
+soft_bootloader_spoof
 print_line
-logowl "After"
+logowl "After:"
 debug_props_info
+print_line
 logowl "service.sh case closed!"
