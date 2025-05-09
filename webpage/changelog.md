@@ -3,6 +3,15 @@
 一个用于伪装 VBMeta 属性、加密状态和系统安全补丁日期的 Magisk 模块
 / A Magisk module to disguise the props of vbmeta, encryption status and security patch date
 
+### 1.2.9
+
+- Remove the restrictions of the length property VBMeta hash
+- 移除属性 VBMeta 哈希值的长度限制
+- Fix some logical problems
+- 修复部分逻辑问题
+- Add soft bootloader status spoof for users not using Shamiko or Sensitive Props
+- 为不使用 Shamiko 或者 Sensitive Props 增加弱 bootloader 状态伪装功能
+
 ### 1.2.8
 
 - Fix some logical loophole
