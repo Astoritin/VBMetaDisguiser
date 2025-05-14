@@ -2,7 +2,6 @@
 MODDIR=${0%/*}
 
 CONFIG_DIR="/data/adb/vbmetadisguiser"
-DEBUG=false
 
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 LOG_DIR="$CONFIG_DIR/logs"
@@ -22,9 +21,6 @@ SECURITY_PATCH_DATE=""
 config_loader() {
 
     logowl "Load config"
-
-    debug=$(init_variables "debug" "$CONFIG_FILE")
-    verify_variables "debug" "$debug" "^(true|false)$"
 
     if [ "$DETECT_KSU" = true ] || [ "$DETECT_APATCH" = true ]; then
         logowl "$MOD_NAME is running on KernelSU / APatch"
