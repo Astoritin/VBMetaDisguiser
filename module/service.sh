@@ -6,6 +6,7 @@ CONFIG_DIR="/data/adb/vbmetadisguiser"
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 LOG_DIR="$CONFIG_DIR/logs"
 LOG_FILE="$LOG_DIR/vd_vbmetab_$(date +"%Y-%m-%d_%H-%M-%S").log"
+LOG_FILE_MAX_SIZE=1024000
 
 CONFIG_FILE_OLD="$LOG_DIR/vbmeta_old.conf"
 
@@ -13,9 +14,11 @@ MODULE_PROP="${MODDIR}/module.prop"
 MOD_NAME="$(sed -n 's/^name=\(.*\)/\1/p' "$MODULE_PROP")"
 MOD_AUTHOR="$(sed -n 's/^author=\(.*\)/\1/p' "$MODULE_PROP")"
 MOD_VER="$(sed -n 's/^version=\(.*\)/\1/p' "$MODULE_PROP") ($(sed -n 's/^versionCode=\(.*\)/\1/p' "$MODULE_PROP"))"
-MOD_ROOT_DIR=$(dirname "$MODDIR")
+MOD_ROOT_DIR="$(dirname "$MODDIR")"
 
 MOD_INTRO="A Magisk module to disguise the props of vbmeta, security patch date and encryption status."
+MOD_SLOGAN_A="The buyer always brings her back because all she does is cry♪"
+MOD_SLOGAN_B="She got the life that she wanted but now all she does is cry♪"
 
 MOD_DESC_OLD="$(sed -n 's/^description=\(.*\)/\1/p' "$MODULE_PROP")"
 
@@ -44,7 +47,6 @@ debug_props_info() {
     debug_get_prop "ro.build.version.security_patch"
     debug_get_prop "ro.system.build.security_patch"
     debug_get_prop "ro.vendor.build.security_patch"
-    print_line
 
 }
 
@@ -154,12 +156,19 @@ module_status_update() {
         desc_active="✅All Done."
     elif [ "$update_count" -gt 0 ]; then
         desc_active="✅Done."
-    else
-        desc_active="❌No effect. Maybe something went wrong?"
     fi
     
-    [ -n "$desc_active" ] && DESCRIPTION="[$desc_active $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto, 📦Root: $ROOT_SOL_DETAIL] $MOD_INTRO"
-    [ -n "$DESCRIPTION" ] && update_config_value "description" "$DESCRIPTION" "$MODULE_PROP"
+    if [ -n "$desc_active" ]; then
+        if [ $((RANDOM % 2)) -eq 0 ]; then
+            DESCRIPTION="[$desc_active $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] $MOD_SLOGAN_A"
+        else
+            DESCRIPTION="[$desc_active $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] $MOD_SLOGAN_B"
+        fi
+    else
+        DESCRIPTION="[❌No effect. Maybe something went wrong?] $MOD_INTRO"
+    fi
+
+    update_config_value "description" "$DESCRIPTION" "$MODULE_PROP"
 
 }
 
@@ -219,8 +228,10 @@ vbmeta_disguiser
 encryption_disguiser
 soft_bootloader_spoof
 module_status_update
+debug_props_info
 print_line
 logowl "service.sh case closed!"
+print_line
 
 {
 
@@ -234,15 +245,29 @@ logowl "service.sh case closed!"
         fi
 
         if [ -f "$CONFIG_FILE_OLD" ] && [ -f "$CONFIG_FILE" ]; then
+            
+            LOG_FILE_SIZE="$(stat -c "%s" "$LOG_FILE" 2>/dev/null)"
+            if [ -f "$LOG_FILE" ] && [ "$LOG_FILE_SIZE" -ge "$LOG_FILE_MAX_SIZE" ]; then
+                module_intro > "$LOG_FILE"
+                show_system_info
+                print_line
+            fi
+
+            logowl "Current timestamp: $(date +"%Y-%m-%d %H:%M:%S")"
+            logowl "Current update period: ${UPDATE_PERIOD}s, Logging file size: ${LOG_FILE_SIZE}B (as max allowed ${LOG_FILE_MAX_SIZE}B)"
+            print_line
             if ! file_compare "$CONFIG_FILE_OLD" "$CONFIG_FILE"; then
                 logowl "Detect changes in file $CONFIG_FILE"
-                logowl "Current timestamp: $(date +"%Y-%m-%d_%H-%M-%S")"
-                config_loader
-                vbmeta_disguiser
-                encryption_disguiser
+                config_loader > /dev/null 2>&1
+                vbmeta_disguiser > /dev/null 2>&1
+                encryption_disguiser > /dev/null 2>&1
                 module_status_update
+                debug_props_info
                 cp "$CONFIG_FILE" "$CONFIG_FILE_OLD"
+            else
+                logowl "No changes detects, nothing needs to update"
             fi
+            print_line
         fi
         if [ -f "$MODDIR/update" ]; then
             MOD_CURRENT_STATUS="update"
@@ -258,12 +283,6 @@ logowl "service.sh case closed!"
             logowl "Detect update status"
             logowl "Exit background task"
             exit 0
-        elif [ "$MOD_CURRENT_STATUS" = "remove" ]; then
-            MOD_REAL_TIME_DESC="[🗑️Reboot to remove. 📦Root: $ROOT_SOL_DETAIL] $MOD_INTRO"
-            update_config_value "description" "$MOD_REAL_TIME_DESC" "$MODULE_PROP"
-        elif [ "$MOD_CURRENT_STATUS" = "disable" ]; then
-            MOD_REAL_TIME_DESC="[❌OFF or reboot to turn off. 📦Root: $ROOT_SOL_DETAIL] $MOD_INTRO"
-            update_config_value "description" "$MOD_REAL_TIME_DESC" "$MODULE_PROP"
         elif [ "$MOD_CURRENT_STATUS" = "enable" ]; then
             module_status_update
         fi
