@@ -27,7 +27,7 @@ SHAMIKO_DIR="${MOD_ROOT_DIR}/zygisk_shamiko"
 SENSITIVE_PROPS_DIR="${MOD_ROOT_DIR}/sensitive_props"
 
 UPDATE_REALTIME=true
-UPDATE_PERIOD=300
+UPDATE_PERIOD=60
 
 AVB_VERSION="2.0"
 VBMETA_SIZE="4096"
@@ -47,6 +47,7 @@ debug_props_info() {
     debug_get_prop "ro.build.version.security_patch"
     debug_get_prop "ro.system.build.security_patch"
     debug_get_prop "ro.vendor.build.security_patch"
+    print_line
 
 }
 
@@ -89,8 +90,6 @@ config_loader() {
 
 vbmeta_disguiser() {
 
-    logowl "Disguise VBMeta partition properties"
-
     resetprop -n "ro.boot.vbmeta.device_state" "locked"
     resetprop -n "ro.boot.vbmeta.hash_alg" "sha256"
 
@@ -103,8 +102,6 @@ vbmeta_disguiser() {
 }
 
 encryption_disguiser(){
-
-    logowl "Disguise Data partition encryption property"
 
     [ -n "$CRYPTO_STATE" ] && resetprop -n "ro.crypto.state" "$CRYPTO_STATE"
 
@@ -178,8 +175,6 @@ soft_bootloader_spoof() {
         return 0
     fi
 
-    logowl "Reset specific bootloader properties"
-
     resetprop -n "ro.boot.vbmeta.device_state" "locked"
     resetprop -n "ro.boot.verifiedbootstate" "green"
     resetprop -n "ro.boot.flash.locked" "1"
@@ -224,14 +219,12 @@ logowl "Start service.sh"
 print_line
 [ -f "$CONFIG_FILE" ] && cp "$CONFIG_FILE" "$CONFIG_FILE_OLD"
 config_loader
-vbmeta_disguiser
-encryption_disguiser
-soft_bootloader_spoof
+vbmeta_disguiser && logowl "Disguise VBMeta partition properties"
+encryption_disguiser && logowl "Disguise Data partition encryption property"
+soft_bootloader_spoof && logowl "Reset specific bootloader properties"
 module_status_update
 debug_props_info
-print_line
 logowl "service.sh case closed!"
-print_line
 
 {
 
@@ -244,31 +237,33 @@ print_line
             exit 0
         fi
 
-        if [ -f "$CONFIG_FILE_OLD" ] && [ -f "$CONFIG_FILE" ]; then
-            
-            LOG_FILE_SIZE="$(stat -c "%s" "$LOG_FILE" 2>/dev/null)"
-            if [ -f "$LOG_FILE" ] && [ "$LOG_FILE_SIZE" -ge "$LOG_FILE_MAX_SIZE" ]; then
-                module_intro > "$LOG_FILE"
-                show_system_info
-                print_line
-            fi
-
-            logowl "Current timestamp: $(date +"%Y-%m-%d %H:%M:%S")"
-            logowl "Current update period: ${UPDATE_PERIOD}s, Logging file size: ${LOG_FILE_SIZE}B (as max allowed ${LOG_FILE_MAX_SIZE}B)"
-            print_line
-            if ! file_compare "$CONFIG_FILE_OLD" "$CONFIG_FILE"; then
-                logowl "Detect changes in file $CONFIG_FILE"
-                config_loader > /dev/null 2>&1
-                vbmeta_disguiser > /dev/null 2>&1
-                encryption_disguiser > /dev/null 2>&1
-                module_status_update
-                debug_props_info
-                cp "$CONFIG_FILE" "$CONFIG_FILE_OLD"
-            else
-                logowl "No changes detects, nothing needs to update"
-            fi
+        LOG_FILE_SIZE=0
+        [ -f "$CONFIG_FILE" ] && LOG_FILE_SIZE="$(stat -c "%s" "$LOG_FILE" 2>/dev/null)"
+        if [ -f "$LOG_FILE" ] && [ "$LOG_FILE_SIZE" -ge "$LOG_FILE_MAX_SIZE" ]; then
+            module_intro > "$LOG_FILE"
+            show_system_info
             print_line
         fi
+
+        if [ ! -f "$CONFIG_FILE" ]; then
+            logowl "Configuration file $CONFIG_FILE does NOT exist!" "WARN"
+            logowl "Exit background task"
+            exit 1
+        elif [ ! -f "$CONFIG_FILE_OLD" ]; then
+            [ -f "$CONFIG_FILE" ] && cp "$CONFIG_FILE" "$CONFIG_FILE_OLD"
+        elif ! file_compare "$CONFIG_FILE_OLD" "$CONFIG_FILE"; then
+            logowl "Timestamp: $(date +"%Y-%m-%d %H:%M:%S")"
+            logowl "Current update period: ${UPDATE_PERIOD}s"
+            logowl "Logging file size: ${LOG_FILE_SIZE}B (as max allowed ${LOG_FILE_MAX_SIZE}B)"
+            logowl "Detect changes in file $CONFIG_FILE"
+            config_loader
+            vbmeta_disguiser
+            encryption_disguiser
+            module_status_update
+            debug_props_info
+            [ -f "$CONFIG_FILE" ] && cp "$CONFIG_FILE" "$CONFIG_FILE_OLD"
+        fi
+
         if [ -f "$MODDIR/update" ]; then
             MOD_CURRENT_STATUS="update"
         elif [ -f "$MODDIR/remove" ]; then
