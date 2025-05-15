@@ -3,6 +3,20 @@
 一个用于伪装 VBMeta 属性、加密状态和系统安全补丁日期的 Magisk 模块
 / A Magisk module to disguise the props of vbmeta, encryption status and security patch date
 
+### 1.3.0
+
+- Support updating VBmeta properties automatically as detecting changes in `/data/adb/vbmetadisguiser/vbmeta.conf`
+- 支持检测到 `/data/adb/vbmetadisguiser/vbmeta.conf` 的变化时更新 VBMeta 的属性值
+- That means you don't need to reboot anymore as changing VBMeta related options `vbmeta.conf`
+- 这也意味着你不再需要在修改 `vbmeta.conf` 中 VBMeta 的相关选项后重新启动设备
+- Support setting up update realtime feature by adding option `update_realtime=true/false` in `/data/adb/vbmetadisguiser/vbmeta.conf`
+- 支持在 `/data/adb/vbmetadisguiser/vbmeta.conf` 中增加选项 `update_realtime=true/false` 以设定是否需要实时更新属性值
+- Support settings update period by adding option `update_period=value` (Unit: seconds) in `/data/adb/vbmetadisguiser/vbmeta.conf`
+- 支持在 `/data/adb/vbmetadisguiser/vbmeta.conf` 中增加选项 `update_period=值` 以设定更新间隔（单位：秒）
+- Sync the changes of aautilities.sh in Bloatware Slayer
+- 同步 Bloatware Slayer 的 aautilities.sh 中的变动
+- SHA256: `dff8c0f1122d7ebd89c82bf8b5a48fe27f8c78aa0369e09f51c984d6181879b0`
+
 ### 1.2.9
 
 - Remove the restrictions of the length property VBMeta hash
