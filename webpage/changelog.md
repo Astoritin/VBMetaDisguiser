@@ -3,6 +3,20 @@
 一个用于伪装 VBMeta 属性、加密状态和系统安全补丁日期的 Magisk 模块
 / A Magisk module to disguise the props of vbmeta, encryption status and security patch date
 
+### 1.3.1
+
+- Remove custom ROM install-recovery.sh removal feature
+- 移除自定义 ROM install-recovery.sh 移除功能
+- Remove custom ROM addon.d removal feature
+- 移除自定义 ROM addon.d 移除功能
+- Remove Reason: Not systemless (non-system-modification), broken, useless, to reduce file size
+- 移除原因：非 Systemless (不修改系统), 该功能一直都是坏的, 并无大用，为了减少文件体积
+- Add X-plore as a open method for action.sh
+- 为 action.sh 增加 X-plore 作为打开方式
+- Sync the changes of aautilities.sh in Bloatware Slayer
+- 同步 Bloatware Slayer 的 aautilities.sh 中的变动
+- SHA256: `9e295c78395adcaf4302b08ae9e1110509217b3a649dd30118f503ff51733bac`
+
 ### 1.3.0
 
 - Support updating VBmeta properties automatically as detecting changes in `/data/adb/vbmetadisguiser/vbmeta.conf`
