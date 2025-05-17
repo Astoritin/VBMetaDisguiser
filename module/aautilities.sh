@@ -42,16 +42,6 @@ is_apatch() {
     return 1
 }
 
-is_recovery() {
-    if [ "$BOOTMODE" = "false" ]; then
-        ROOT_SOL="Recovery"
-    else
-        ROOT_SOL="Unknown"
-    fi
-    logowl "Please install this module in Magisk / KernelSU / APatch APP!" "FATAL"
-    abort "Install module in Recovery/Unknown is not supported!"
-}
-
 install_env_check() {
 
     MAGISK_BRANCH_NAME="Official"
@@ -90,7 +80,8 @@ install_env_check() {
     fi
 
     if [ "$ROOT_SOL_COUNT" -lt 1 ]; then
-        is_recovery
+        ROOT_SOL="Unknown"
+        ROOT_SOL_DETAIL="Unknown"
     fi
 
 }
@@ -185,6 +176,11 @@ print_line() {
 init_variables() {
     key="$1"
     config_file="$2"
+
+    if [ -z "$key" ]; then
+        logowl "Key is NOT ordered! (1)" "ERROR"
+        return 1
+    fi
 
     if [ ! -f "$config_file" ]; then
         logowl "Config file $config_file does NOT exist (1)" "ERROR" >&2
