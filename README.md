@@ -14,7 +14,7 @@ One of the purpose of writing this module is bypass the specific items in specif
 > Who knows? Maybe specific APPs might also use this point to check out whether the device has unlocked bootloader.
 
 1. Please get the Boot Hash in **Key Attestation/Native Detector**.
-> Native detector and one fork of Key Attestation supports clicking on and copy the boot hash.
+> Native detector and one fork of Key Attestation supports clicking on and copying the boot hash.
 2. Open `/data/adb/vbmetadisguiser` and open `vbmeta.conf` with root permission file explorer.
 3. Save the boot hash behind the keypair `boot_hash=` with the copy one.
 4. Reboot if it is the first time you use this module. If not, just wait a minute. It will update properties automatically.
