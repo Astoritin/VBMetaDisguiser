@@ -17,6 +17,7 @@ com.speedsoftware.rootexplorer/com.speedsoftware.rootexplorer.RootExplorer
 com.mixplorer/com.mixplorer.activities.BrowseActivity
 bin.mt.plus/.Main
 bin.mt.plus/bin.mt.plus.Main
+com.lonelycatgames.Xplore/com.lonelycatgames.Xplore.Browser
 com.ghisler.android.TotalCommander/com.ghisler.android.TotalCommander.MainActivity
 pl.solidexplorer2/pl.solidexplorer.activities.MainActivity
 com.amaze.filemanager/com.amaze.filemanager.activities.MainActivity
@@ -39,17 +40,13 @@ for fm in $ROOT_FILE_MANAGERS; do
 
     if pm path "$PKG" >/dev/null 2>&1; then
         logowl "Attempt to use $PKG to open config dir"
-        logowl "Execute: am start -n $fm file://$CONFIG_DIR"
-        su -c "am start -n $fm file://$CONFIG_DIR"
-
+        am start -n "$fm" "file://$CONFIG_DIR"
         result_action="$?"
+        logowl "Execute: am start -n $fm file://$CONFIG_DIR ($result_action)"
         if [ $result_action -eq 0 ]; then
-            logowl "Succeeded (code: $result_action)"
             print_line
             logowl "action.sh case closed!"
             exit 0
-        else
-            logowl "Failed (code: $result_action)" "ERROR"
         fi
     else
           logowl "$PKG is NOT installed yet!" "ERROR"
@@ -57,7 +54,6 @@ for fm in $ROOT_FILE_MANAGERS; do
 
 done
 
-ui_print "No available Root Explorer detected, please open config folder manually if needed!"
 logowl "No available Root Explorer detected, please open config folder manually if needed!" "ERROR"
 print_line
 logowl "action.sh case closed!"
