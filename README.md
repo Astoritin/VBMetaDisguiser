@@ -29,10 +29,11 @@ One of the purpose of writing this module is bypass the specific items in specif
 > The encryption status will NOT be set by default. If needed, you can set this option as `encrypted` to pretend your device has been encrypted. (Support `encrypted`,`unencrypted` or `unsupported`)
 4. **`all=`、`system=`、`boot=`、`vendor=`**: all means all the partitions use the same value, as system means system partition security patch, so are boot and vendor.
 5. Since v1.2.6, you can configure security patch date in `/data/adb/vbmetadisguiser/vbmeta.conf` too.
-- NOTICE: TrickyStore's configuration (`/data/adb/tricky_store/security_patch.txt`) has the highest priority, with VBMeta Disguiser's built-in configuration (`/data/adb/vbmetadisguiser/vbmeta.conf`) coming second
+
+NOTICE: TrickyStore's configuration (`/data/adb/tricky_store/security_patch.txt`) has the highest priority, with VBMeta Disguiser's built-in configuration (`/data/adb/vbmetadisguiser/vbmeta.conf`) coming second
 
 ## Logs
-Logs are saved in `/data/adb/bloatwareslayer/logs`, you can review them and submit them when reporting issues. 
+Logs are saved in `/data/adb/vbmetadisguiser/logs`, you can review them and submit them when reporting issues. 
 
 **When reporting issues, please simply zip the entire logs folder and upload it.**
 
