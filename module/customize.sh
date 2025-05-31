@@ -13,27 +13,27 @@ MOD_INTRO="A Magisk module to disguise the props of vbmeta, security patch date 
 
 [ ! -d "$VERIFY_DIR" ] && mkdir -p "$VERIFY_DIR"
 
-echo "- Extract aautilities.sh"
-unzip -o "$ZIPFILE" 'aautilities.sh' -d "$TMPDIR" >&2
-if [ ! -f "$TMPDIR/aautilities.sh" ]; then
-  echo "! Failed to extract aautilities.sh!"
+echo "- Extract aa-util.sh"
+unzip -o "$ZIPFILE" 'aa-util.sh' -d "$TMPDIR" >&2
+if [ ! -f "$TMPDIR/aa-util.sh" ]; then
+  echo "! Failed to extract aa-util.sh!"
   abort "! This zip may be corrupted!"
 fi
 
-. "$TMPDIR/aautilities.sh"
+. "$TMPDIR/aa-util.sh"
 
 logowl "Setting up $MOD_NAME"
 logowl "Version: $MOD_VER"
-init_logowl "$LOG_DIR"
+logowl_init "$LOG_DIR"
 install_env_check
 show_system_info
 logowl "Install from $ROOT_SOL app"
 logowl "Essential checks"
-extract "$ZIPFILE" 'aautilities.sh' "$VERIFY_DIR"
+extract "$ZIPFILE" 'aa-util.sh' "$VERIFY_DIR"
 extract "$ZIPFILE" 'customize.sh' "$VERIFY_DIR"
-clean_old_logs "$LOG_DIR" 20
+logowl_clean "$LOG_DIR" 20
 logowl "Extract module files"
-extract "$ZIPFILE" 'aautilities.sh' "$MODPATH"
+extract "$ZIPFILE" 'aa-util.sh' "$MODPATH"
 extract "$ZIPFILE" 'module.prop' "$MODPATH"
 extract "$ZIPFILE" 'action.sh' "$MODPATH"
 extract "$ZIPFILE" 'post-fs-data.sh' "$MODPATH"
@@ -46,11 +46,9 @@ else
     logowl "vbmeta.conf already exists"
     logowl "vbmeta.conf will NOT be overwritten"
 fi
-if [ -n "$VERIFY_DIR" ] && [ -d "$VERIFY_DIR" ] && [ "$VERIFY_DIR" != "/" ]; then
-    rm -rf "$VERIFY_DIR"
-fi
+rm -rf "$VERIFY_DIR"
 logowl "Set permission"
 set_permission_recursive "$MODPATH" 0 0 0755 0644
 logowl "Welcome to use $MOD_NAME!"
-DESCRIPTION="[⏳Reboot to take effect.] $MOD_INTRO"
-update_config_value "description" "$DESCRIPTION" "$MODPATH/module.prop" "true"
+DESCRIPTION="[✨Reboot to take effect.] $MOD_INTRO"
+update_config_var "description" "$DESCRIPTION" "$MODPATH/module.prop"
