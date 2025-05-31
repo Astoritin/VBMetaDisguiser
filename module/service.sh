@@ -5,8 +5,7 @@ CONFIG_DIR="/data/adb/vbmetadisguiser"
 
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 LOG_DIR="$CONFIG_DIR/logs"
-LOG_FILE="$LOG_DIR/vd_vbmetab_$(date +"%Y-%m-%d_%H-%M-%S").log"
-LOG_FILE_MAX_SIZE=1024000
+LOG_FILE="$LOG_DIR/vd_core_b_$(date +"%Y-%m-%d_%H-%M-%S").log"
 
 CONFIG_FILE_OLD="$LOG_DIR/vbmeta_old.conf"
 
@@ -17,8 +16,6 @@ MOD_VER="$(sed -n 's/^version=\(.*\)/\1/p' "$MODULE_PROP") ($(sed -n 's/^version
 MOD_ROOT_DIR="$(dirname "$MODDIR")"
 
 MOD_INTRO="A Magisk module to disguise the props of vbmeta, security patch date and encryption status."
-MOD_SLOGAN_A="The buyer always brings her back because all she does is cry♪"
-MOD_SLOGAN_B="She got the life that she wanted but now all she does is cry♪"
 
 MOD_DESC_OLD="$(sed -n 's/^description=\(.*\)/\1/p' "$MODULE_PROP")"
 
@@ -33,38 +30,35 @@ AVB_VERSION="2.0"
 VBMETA_SIZE="4096"
 BOOT_HASH="00000000000000000000000000000000"
 
-debug_props_info() {
+get_from_resetprop() {
+    prop_name=$1
+    prop_current_value=$(resetprop "$prop_name")
 
-    print_line
-    debug_get_prop "ro.boot.vbmeta.device_state"
-    debug_get_prop "ro.boot.vbmeta.avb_version"
-    debug_get_prop "ro.boot.vbmeta.hash_alg"
-    debug_get_prop "ro.boot.vbmeta.size"
-    debug_get_prop "ro.boot.vbmeta.digest"
-    print_line
-    debug_get_prop "ro.crypto.state"
-    print_line
-    debug_get_prop "ro.build.version.security_patch"
-    debug_get_prop "ro.system.build.security_patch"
-    debug_get_prop "ro.vendor.build.security_patch"
-    print_line
+    [ -n "$prop_current_value" ] && logowl "$prop_name=$prop_current_value" 
 
 }
 
-debug_contains_and_reset_prop() {
+debug_props_info() {
 
-    prop_name="$1"
-    prop_contains_keyword="$2"
-    prop_new_value="$3"
-
-    [ -z "$prop_name" ] || [ -z "$prop_contains_keyword" ] || [ -z "$prop_new_value" ] && return 1
-    
-    prop_current_value=$(resetprop "$prop_name")
-
-    if echo "$prop_current_value" | grep -q "$prop_contains_keyword"; then
-        resetprop "$prop_name" "$prop_new_value"
-        return 0
-    fi
+    print_line
+    logowl "Security Patch date properties"
+    print_line
+    get_from_resetprop "ro.build.version.security_patch"
+    get_from_resetprop "ro.system.build.security_patch"
+    get_from_resetprop "ro.vendor.build.security_patch"
+    print_line
+    logowl "VBMeta partition properties"
+    print_line
+    get_from_resetprop "ro.boot.vbmeta.device_state"
+    get_from_resetprop "ro.boot.vbmeta.avb_version"
+    get_from_resetprop "ro.boot.vbmeta.hash_alg"
+    get_from_resetprop "ro.boot.vbmeta.size"
+    get_from_resetprop "ro.boot.vbmeta.digest"
+    print_line
+    logowl "Data partition properties"
+    print_line
+    get_from_resetprop "ro.crypto.state"
+    print_line
 
 }
 
@@ -90,20 +84,20 @@ config_loader() {
 
 vbmeta_disguiser() {
 
-    resetprop -n "ro.boot.vbmeta.device_state" "locked"
-    resetprop -n "ro.boot.vbmeta.hash_alg" "sha256"
+    check_before_resetprop "ro.boot.vbmeta.device_state" "locked"
+    check_before_resetprop "ro.boot.vbmeta.hash_alg" "sha256"
 
     if [ -s "$CONFIG_FILE" ]; then
-        resetprop -n "ro.boot.vbmeta.digest" "$BOOT_HASH"
-        resetprop -n "ro.boot.vbmeta.size" "$VBMETA_SIZE"
-        resetprop -n "ro.boot.vbmeta.avb_version" "$AVB_VERSION"
+        check_before_resetprop "ro.boot.vbmeta.digest" "$BOOT_HASH"
+        check_before_resetprop "ro.boot.vbmeta.size" "$VBMETA_SIZE"
+        check_before_resetprop "ro.boot.vbmeta.avb_version" "$AVB_VERSION"
     fi
 
 }
 
 encryption_disguiser(){
 
-    [ -n "$CRYPTO_STATE" ] && resetprop -n "ro.crypto.state" "$CRYPTO_STATE"
+    [ -n "$CRYPTO_STATE" ] && check_before_resetprop "ro.crypto.state" "$CRYPTO_STATE"
 
 }
 
@@ -113,8 +107,8 @@ module_status_update() {
     update_count=0
     
     vbmeta_version=$(getprop 'ro.boot.vbmeta.avb_version')
-    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' | cut -c1-12 | tr '[:lower:]' '[:upper:]')
-    ellipsis="(...)"
+    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' | cut -c1-8 | tr '[:lower:]' '[:upper:]')
+    ellipsis="[..]"
     vbmeta_digest="${vbmeta_digest}${ellipsis}"
     vbmeta_hash_alg=$(getprop 'ro.boot.vbmeta.hash_alg' | tr '[:lower:]' '[:upper:]')
     vbmeta_size=$(getprop 'ro.boot.vbmeta.size')
@@ -123,9 +117,9 @@ module_status_update() {
     security_patch=$(getprop 'ro.build.version.security_patch')
 
     if [ -z "$vbmeta_digest" ] || echo "$vbmeta_digest" | grep -qE '^0+$'; then
-        desc_vbmeta="❓VBMeta Hash: N/A"
+        desc_vbmeta="❓VBMeta: N/A"
     else
-        desc_vbmeta="✅VBMeta Hash: $vbmeta_digest ($vbmeta_hash_alg)"
+        desc_vbmeta="✅VBMeta: $vbmeta_digest ($vbmeta_hash_alg)"
         update_count=$((update_count + 1))
     fi
     
@@ -135,7 +129,7 @@ module_status_update() {
     [ "$crypto_state" = "unencrypted" ] && desc_crypto="🔓"
     [ "$crypto_state" = "unsupported" ] && desc_crypto="❌"
     [ -n "$desc_crypto" ] && update_count=$((update_count + 1))
-    desc_crypto="${desc_crypto}Data partition: $crypto_state"
+    desc_crypto="${desc_crypto}Data: $crypto_state"
 
     if [ ! -e "$TRICKY_STORE_CONFIG_FILE" ] && [ ! -e "$CONFIG_FILE" ]; then
         desc_ts_sp="❓Security patch config does NOT exist"
@@ -157,9 +151,9 @@ module_status_update() {
     
     if [ -n "$desc_active" ]; then
         if [ $((RANDOM % 2)) -eq 0 ]; then
-            DESCRIPTION="[$desc_active $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] $MOD_SLOGAN_A"
+            DESCRIPTION="[$desc_active $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] $MOD_INTRO"
         else
-            DESCRIPTION="[$desc_active $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] $MOD_SLOGAN_B"
+            DESCRIPTION="[$desc_active $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] $MOD_INTRO"
         fi
     else
         DESCRIPTION="[❌No effect. Maybe something went wrong?] $MOD_INTRO"
@@ -175,43 +169,42 @@ soft_bootloader_spoof() {
         return 0
     fi
 
-    resetprop -n "ro.boot.vbmeta.device_state" "locked"
-    resetprop -n "ro.boot.verifiedbootstate" "green"
-    resetprop -n "ro.boot.flash.locked" "1"
-    resetprop -n "ro.boot.veritymode" "enforcing"
-    resetprop -n "ro.boot.warranty_bit" "0"
-    resetprop -n "ro.warranty_bit" "0"
-    resetprop -n "ro.debuggable" "0"
-    resetprop -n "ro.force.debuggable" "0"
-    resetprop -n "ro.secure" "1"
-    resetprop -n "ro.adb.secure" "1"
-    resetprop -n "ro.build.type" "user"
-    resetprop -n "ro.build.tags" "release-keys"
-    resetprop -n "ro.vendor.boot.warranty_bit" "0"
-    resetprop -n "ro.vendor.warranty_bit" "0"
-    resetprop -n "vendor.boot.vbmeta.device_state" "locked"
-    resetprop -n "vendor.boot.verifiedbootstate" "green"
+    check_before_resetprop "ro.boot.vbmeta.device_state" "locked"
+    check_before_resetprop "ro.boot.verifiedbootstate" "green"
+    check_before_resetprop "ro.boot.flash.locked" "1"
+    check_before_resetprop "ro.boot.veritymode" "enforcing"
+    check_before_resetprop "ro.boot.warranty_bit" "0"
+    check_before_resetprop "ro.warranty_bit" "0"
+    check_before_resetprop "ro.debuggable" "0"
+    check_before_resetprop "ro.force.debuggable" "0"
+    check_before_resetprop "ro.secure" "1"
+    check_before_resetprop "ro.adb.secure" "1"
+    check_before_resetprop "ro.build.type" "user"
+    check_before_resetprop "ro.build.tags" "release-keys"
+    check_before_resetprop "ro.vendor.boot.warranty_bit" "0"
+    check_before_resetprop "ro.vendor.warranty_bit" "0"
+    check_before_resetprop "vendor.boot.vbmeta.device_state" "locked"
+    check_before_resetprop "vendor.boot.verifiedbootstate" "green"
 
-    resetprop -n "sys.oem_unlock_allowed" "0"
-    resetprop -n "ro.oem_unlock_supported" "0"
+    check_before_resetprop "sys.oem_unlock_allowed" "0"
+    check_before_resetprop "ro.oem_unlock_supported" "0"
 
-    resetprop -n "ro.boot.realmebootstate" "green"
-    resetprop -n "ro.boot.realme.lockstate" "1"
+    check_before_resetprop "ro.boot.realmebootstate" "green"
+    check_before_resetprop "ro.boot.realme.lockstate" "1"
 
-    resetprop -n "ro.secureboot.lockstate" "locked"
+    check_before_resetprop "ro.secureboot.lockstate" "locked"
 
-    resetprop -n "init.svc.flash_recovery" "stopped"
+    check_before_resetprop "init.svc.flash_recovery" "stopped"
 
-    debug_contains_and_reset_prop "ro.bootmode" "recovery" "unknown"
-    debug_contains_and_reset_prop "ro.boot.bootmode" "recovery" "unknown"
-    debug_contains_and_reset_prop "vendor.boot.bootmode" "recovery" "unknown"
+    find_keyword_before_resetprop "ro.bootmode" "recovery" "unknown"
+    find_keyword_before_resetprop "ro.boot.bootmode" "recovery" "unknown"
+    find_keyword_before_resetprop "vendor.boot.bootmode" "recovery" "unknown"
 
 }
 
+. "$MODDIR/aa-util.sh"
 
-. "$MODDIR/aautilities.sh"
-
-init_logowl "$LOG_DIR"
+logowl_init "$LOG_DIR"
 module_intro >> "$LOG_FILE"
 show_system_info
 print_line
@@ -237,14 +230,6 @@ logowl "service.sh case closed!"
             exit 0
         fi
 
-        LOG_FILE_SIZE=0
-        [ -f "$CONFIG_FILE" ] && LOG_FILE_SIZE="$(stat -c "%s" "$LOG_FILE" 2>/dev/null)"
-        if [ -f "$LOG_FILE" ] && [ "$LOG_FILE_SIZE" -ge "$LOG_FILE_MAX_SIZE" ]; then
-            module_intro > "$LOG_FILE"
-            show_system_info
-            print_line
-        fi
-
         if [ ! -f "$CONFIG_FILE" ]; then
             logowl "Configuration file $CONFIG_FILE does NOT exist!" "WARN"
             logowl "Exit background task"
@@ -254,8 +239,7 @@ logowl "service.sh case closed!"
         elif ! file_compare "$CONFIG_FILE_OLD" "$CONFIG_FILE"; then
             logowl "Timestamp: $(date +"%Y-%m-%d %H:%M:%S")"
             logowl "Current update period: ${UPDATE_PERIOD}s"
-            logowl "Logging file size: ${LOG_FILE_SIZE}B (as max allowed ${LOG_FILE_MAX_SIZE}B)"
-            logowl "Detect changes in file $CONFIG_FILE"
+            logowl "Detect changes in $CONFIG_FILE"
             config_loader
             vbmeta_disguiser
             encryption_disguiser
