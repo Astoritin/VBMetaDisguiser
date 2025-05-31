@@ -1,7 +1,7 @@
 #!/system/bin/sh
 MODDIR=${0%/*}
 
-. "$MODDIR/aautilities.sh"
+. "$MODDIR/aa-util.sh"
 
 CONFIG_DIR="/data/adb/vbmetadisguiser"
 LOG_DIR="$CONFIG_DIR/logs"
@@ -54,6 +54,7 @@ for fm in $ROOT_FILE_MANAGERS; do
 
 done
 
-logowl "No available Root Explorer detected, please open config folder manually if needed!" "ERROR"
+logowl "No available Root Explorer detected!" "WARN"
+logowl "Please open config dir manually if needed" "WARN"
 print_line
 logowl "action.sh case closed!"
