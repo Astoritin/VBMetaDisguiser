@@ -170,10 +170,12 @@ logowl() {
 
 print_line() {
 
-    length=${1:-40}
+    length=${1:-45}
+    symbol=${2:--}
 
-    line=$(printf "%-${length}s" | tr ' ' '-')
+    line=$(printf "%-${length}s" | tr ' ' "$symbol")
     logowl "$line" "-"
+
 }
 
 get_config_var() {
@@ -234,12 +236,10 @@ get_config_var() {
 
     awk_exit_state=$?
     case $awk_exit_state in
-        1)  logowl "Key is NOT found or find unclosed quote! ($awk_exit_state)" "ERROR"
-            return 5
+        1)  return 5
             ;;
         0)  ;;
-        *)  logowl "Unexpected error! ($awk_exit_state)" "ERROR"
-            return 6
+        *)  return 6
             ;;
     esac
 
@@ -452,16 +452,17 @@ set_permission_recursive() {
 
 }
 
-clean_duplicate_items() {
+fetch_prop() {
+    prop_name=$1
+    prop_current_value=$(getprop "$prop_name")
 
-    filed=$1
-
-    [ -z "$filed" ] && return 1
-    [ ! -f "$filed" ] && return 2
-
-    awk '!seen[$0]++' "$filed" > "${filed}.tmp"
-    mv "${filed}.tmp" "$filed"
-    return 0
+    if [ -n "$prop_current_value" ]; then
+        logowl "$prop_name=$prop_current_value"
+        return 0
+    elif [ -z "$prop_current_value" ]; then
+        logowl "$prop_name="
+        return 1
+    fi
 
 }
 
@@ -488,3 +489,4 @@ find_keyword_before_resetprop() {
     fi
 
 }
+
