@@ -9,7 +9,7 @@ VERIFY_DIR="$TMPDIR/.aa_verify"
 
 MOD_NAME="$(grep_prop name "${TMPDIR}/module.prop")"
 MOD_VER="$(grep_prop version "${TMPDIR}/module.prop") ($(grep_prop versionCode "${TMPDIR}/module.prop"))"
-MOD_INTRO="A Magisk module to disguise the props of vbmeta, security patch date and encryption status."
+MOD_INTRO="Disguise the properties of vbmeta, security patch date and encryption status."
 
 [ ! -d "$VERIFY_DIR" ] && mkdir -p "$VERIFY_DIR"
 
