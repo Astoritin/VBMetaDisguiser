@@ -7,11 +7,6 @@ CONFIG_DIR="/data/adb/vbmetadisguiser"
 LOG_DIR="$CONFIG_DIR/logs"
 LOG_FILE="$LOG_DIR/vd_action_$(date +"%Y-%m-%d_%H-%M-%S").log"
 
-MODULE_PROP="$MODDIR/module.prop"
-MOD_NAME="$(sed -n 's/^name=\(.*\)/\1/p' "$MODULE_PROP")"
-MOD_AUTHOR="$(sed -n 's/^author=\(.*\)/\1/p' "$MODULE_PROP")"
-MOD_VER="$(sed -n 's/^version=\(.*\)/\1/p' "$MODULE_PROP") ($(sed -n 's/^versionCode=\(.*\)/\1/p' "$MODULE_PROP"))"
-
 ROOT_FILE_MANAGERS="
 com.speedsoftware.rootexplorer/com.speedsoftware.rootexplorer.RootExplorer
 com.mixplorer/com.mixplorer.activities.BrowseActivity
