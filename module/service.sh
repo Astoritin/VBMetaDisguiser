@@ -57,8 +57,9 @@ module_status_update() {
     update_count=0
     
     vbmeta_version=$(getprop 'ro.boot.vbmeta.avb_version')
-    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' | cut -c1-5 | tr '[:lower:]' '[:upper:]')
+    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' | cut -c1-8 | tr '[:lower:]' '[:upper:]')
     ellipsis="[..]"
+    vbmeta_hash_alg=$(getprop 'ro.boot.vbmeta.hash_alg' | tr '[:lower:]' '[:upper:]')
     vbmeta_digest="${vbmeta_digest}${ellipsis}"
     vbmeta_size=$(getprop 'ro.boot.vbmeta.size')
     device_state=$(getprop 'ro.boot.vbmeta.device_state')
@@ -68,9 +69,11 @@ module_status_update() {
     if [ -z "$vbmeta_digest" ] || echo "$vbmeta_digest" | grep -qE '^0+$'; then
         desc_vbmeta="❓VBMeta: N/A"
     else
-        desc_vbmeta="✅VBMeta: $vbmeta_digest"
+        desc_vbmeta="⚙️VBMeta: $vbmeta_digest"
         update_count=$((update_count + 1))
     fi
+
+    desc_avb="AVB ${vbmeta_version:-N/A} (${device_state:-N/A}, $vbmeta_hash_alg)"
 
     [ "$crypto_state" = "encrypted" ] && desc_crypto="🔒"
     [ "$crypto_state" = "unencrypted" ] && desc_crypto="🔓"
@@ -85,7 +88,7 @@ module_status_update() {
     elif [ ! -s "$TRICKY_STORE_CONFIG_FILE" ] && [ ! -s "$CONFIG_FILE" ]; then
         desc_ts_sp="❓Security patch: N/A"
     else
-        desc_ts_sp="✅Security patch: $security_patch"
+        desc_ts_sp="⚡Security patch: $security_patch"
         update_count=$((update_count + 1))
     fi
 
@@ -106,7 +109,7 @@ module_status_update() {
 
     done < "$SLAIN_PROPS"
 
-    [ "$slain_props_count" -ge 0 ] && update_count=$((update_count + 1)) && desc_slain_props="📃$slain_props_count properties slain"
+    [ "$slain_props_count" -gt 0 ] && update_count=$((update_count + 1)) && desc_slain_props="📌$slain_props_count prop(s) slain"
 
     desc_active=""
     if [ "$update_count" -eq "$desc_max" ]; then
@@ -116,7 +119,11 @@ module_status_update() {
     fi
     
     if [ -n "$desc_active" ]; then
-        DESCRIPTION="[$desc_active $desc_vbmeta, $desc_ts_sp, $desc_crypto, $desc_slain_props] $MOD_INTRO"
+        if [ -n "$desc_slain_props" ]; then
+            DESCRIPTION="[$desc_active $desc_vbmeta, $desc_ts_sp, $desc_crypto, $desc_slain_props] $MOD_INTRO"
+        else
+            DESCRIPTION="[$desc_active $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] $MOD_INTRO"
+        fi
     else
         DESCRIPTION="[❌No effect. Maybe something went wrong?] $MOD_INTRO"
     fi
