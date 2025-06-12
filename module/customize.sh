@@ -48,7 +48,7 @@ else
     check_props_list=$(grep_config_var "props_list" "$CONFIG_FILE")
     if [ -z "$check_props_slay" ]; then
       logowl "Append new config to vbmeta.conf"
-        echo -e "# Behaviors of Properties Slayer\n
+        echo -e "\n# Behaviors of Properties Slayer\n
 props_slay=false" >> "$CONFIG_FILE"
     fi
     if [ -z "$check_props_list" ]; then
