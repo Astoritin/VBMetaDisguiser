@@ -39,12 +39,49 @@ extract "$ZIPFILE" 'action.sh' "$MODPATH"
 extract "$ZIPFILE" 'post-fs-data.sh' "$MODPATH"
 extract "$ZIPFILE" 'service.sh' "$MODPATH"
 extract "$ZIPFILE" 'uninstall.sh' "$MODPATH"
-if [ ! -f "$CONFIG_DIR/vbmeta.conf" ]; then
+if [ ! -f "$CONFIG_FILE" ]; then
     logowl "vbmeta.conf does NOT exist"
     extract "$ZIPFILE" 'vbmeta.conf' "$CONFIG_DIR"    
 else
     logowl "vbmeta.conf already exists"
-    logowl "vbmeta.conf will NOT be overwritten"
+    check_props_slay=$(grep_config_var "props_slay" "$CONFIG_FILE")
+    check_props_list=$(grep_config_var "props_list" "$CONFIG_FILE")
+    if [ -z "$check_props_slay" ]; then
+      logowl "Append new config to vbmeta.conf"
+        echo -e "# Behaviors of Properties Slayer\n
+props_slay=false" >> "$CONFIG_FILE"
+    fi
+    if [ -z "$check_props_list" ]; then
+        echo -e 'props_list="persist.sys.spoof.gms
+persist.sys.pihooks.security_pa
+persist.sys.pihooks.first_api_l
+persist.sys.pihooks.disable.gms
+persist.sys.pihooks.disable.gms_props
+persist.sys.pihooks.disable.gms_key_attestation_block
+persist.sys.pihooks_ID
+persist.sys.pihooks_BRAND
+persist.sys.pihooks_DEVICE
+persist.sys.pihooks_DEVICE_INIT
+persist.sys.pihooks_PRODUCT
+persist.sys.pihooks_FINGERPRINT
+persist.sys.pihooks_MANUFACTURE
+persist.sys.pihooks_SECURITY_PA
+persist.sys.pihooks_mainline_BR
+persist.sys.pihooks_mainline_MO
+persist.sys.pihooks_mainline_DE
+persist.sys.pihooks_mainline_PR
+persist.sys.pihooks_mainline_FI
+persist.sys.pihooks_mainline_MA
+persist.sys.pixelprops.pi
+persist.sys.pixelprops.all
+persist.sys.pixelprops.gms
+persist.sys.pixelprops.gapps
+persist.sys.pixelprops.google
+persist.sys.pixelprops.gphotos
+persist.sys.spoof.gms
+persist.sys.entryhooks_enabled"' >> "$CONFIG_FILE"
+    fi
+    [ -n "$check_props_slay" ] && [ -n "$check_props_list" ] && logowl "vbmeta.conf will NOT be overwritten"
 fi
 rm -rf "$VERIFY_DIR"
 logowl "Set permission"
