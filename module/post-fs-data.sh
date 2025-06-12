@@ -200,21 +200,18 @@ props_slayer() {
             logowl "Remove slain properties backup file"
             rm -f "$SLAIN_PROPS"
         fi
+        return 0
     fi
 
     logowl "Remove specific properties"
-
-    [ ! -f "$SLAIN_PROPS" ] && echo -e "# $MOD_NAME Slain Properties\n
-    # These props will be recovered when uninstalling $MOD_NAME\n
-    # If this file lost, these properties will be lost permanently\n
-    # You have been warned and take your own risk if you delete this file\n" >> "$SLAIN_PROPS"
-    echo -e "\n# Timestamp: $(date +"%Y%m%dT%H%M%S")\n" >> "$SLAIN_PROPS"
 
     for props_r in $PROPS_LIST; do
         props_r_value="$(getprop $props_r)"
         [ -n "$props_r_value" ] && echo "${props_r}=$(getprop $props_r)" >> "$SLAIN_PROPS"
         check_and_slayprop $props_r
     done
+
+    clean_duplicate_items "$SLAIN_PROPS"
 
 }
 
