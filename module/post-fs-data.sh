@@ -1,24 +1,25 @@
 #!/system/bin/sh
 MODDIR=${0%/*}
 
+. "$MODDIR/aa-util.sh"
+
 CONFIG_DIR="/data/adb/vbmetadisguiser"
-
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
-LOG_DIR="$CONFIG_DIR/logs"
-LOG_FILE="$LOG_DIR/vd_core_sp_$(date +"%Y-%m-%d_%H-%M-%S").log"
 
-MODULE_PROP="${MODDIR}/module.prop"
-MOD_NAME="$(sed -n 's/^name=\(.*\)/\1/p' "$MODULE_PROP")"
-MOD_AUTHOR="$(sed -n 's/^author=\(.*\)/\1/p' "$MODULE_PROP")"
-MOD_VER="$(sed -n 's/^version=\(.*\)/\1/p' "$MODULE_PROP") ($(sed -n 's/^versionCode=\(.*\)/\1/p' "$MODULE_PROP"))"
+LOG_DIR="$CONFIG_DIR/logs"
+LOG_FILE="$LOG_DIR/vd_core_sp_$(date +"%Y%m%dT%H%M%S").log"
+SLAIN_PROPS="$LOG_DIR/slain_props.prop"
 
 TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
 
-SECURITY_PATCH_DATE=""
+SECURITY_PATCH_DATE="2025-06-01"
 
 AVB_VERSION="2.0"
 VBMETA_SIZE="4096"
 BOOT_HASH="00000000000000000000000000000000"
+
+PROPS_SLAY=false
+PROPS_LIST=""
 
 config_loader() {
 
@@ -27,10 +28,14 @@ config_loader() {
     avb_version=$(get_config_var "avb_version" "$CONFIG_FILE")
     vbmeta_size=$(get_config_var "vbmeta_size" "$CONFIG_FILE")
     boot_hash=$(get_config_var "boot_hash" "$CONFIG_FILE")
+    props_slay=$(get_config_var "props_slay" "$CONFIG_FILE")
+    props_list=$(get_config_var "props_list" "$CONFIG_FILE")
 
     verify_var "avb_version" "$avb_version" "^[1-9][0-9]*\.[0-9]*$|^[1-9][0-9]*$"
     verify_var "vbmeta_size" "$vbmeta_size" "^[1-9][0-9]*$"
     verify_var "boot_hash" "$boot_hash" "^[0-9a-fA-F]+$"
+    verify_var "props_slay" "$props_slay" "^(true|false)$"
+    verify_var "props_list" "$props_list" "^[a-zA-Z0-9/_\. @-]*$"
 
 }
 
@@ -146,6 +151,8 @@ ts_sp_config_advanced() {
 
 security_patch_info_disguiser() {
 
+    logowl "Disguise security patch properties"
+
     if [ -f "$TRICKY_STORE_CONFIG_FILE" ]; then
         TS_FILE_CONTENT=$(cat "$TRICKY_STORE_CONFIG_FILE")
         if printf '%s\n' "$TS_FILE_CONTENT" | grep -q '='; then
@@ -162,36 +169,13 @@ security_patch_info_disguiser() {
     else
         logowl "Both Tricky Store config and" "WARN"
         logowl "VBMeta Disguiser config does NOT exist!"
-        return 1
     fi
 
 }
 
-debug_props_info() {
-
-    print_line "45" "-"
-    logowl "Security Patch date properties"
-    print_line "45" " "
-    fetch_prop "ro.build.version.security_patch"
-    fetch_prop "ro.system.build.security_patch"
-    fetch_prop "ro.vendor.build.security_patch"
-    print_line "45" " "
-    logowl "VBMeta partition properties"
-    print_line "45" " "
-    fetch_prop "ro.boot.vbmeta.device_state"
-    fetch_prop "ro.boot.vbmeta.avb_version"
-    fetch_prop "ro.boot.vbmeta.hash_alg"
-    fetch_prop "ro.boot.vbmeta.size"
-    fetch_prop "ro.boot.vbmeta.digest"
-    print_line "45" " "
-    logowl "Data partition properties"
-    print_line "45" " "
-    fetch_prop "ro.crypto.state"
-    print_line "45" "-"
-
-}
-
 vbmeta_disguiser() {
+
+    logowl "Disguise VBMeta partition properties"
 
     resetprop "ro.boot.vbmeta.device_state" "locked"
     resetprop "ro.boot.vbmeta.hash_alg" "sha256"
@@ -204,7 +188,63 @@ vbmeta_disguiser() {
 
 }
 
-. "$MODDIR/aa-util.sh"
+props_slayer() {
+    
+    [ -z "$PROPS_LIST" ] && [ -z "$PROPS_SLAY" ] && return 1
+
+    if [ "$PROPS_SLAY" = false ]; then
+        logowl "Properties Slayer is disabled"
+        if [ -f "$SLAIN_PROPS" ]; then
+            logowl "Restore slain properties"
+            resetprop -p -f "$SLAIN_PROPS"
+            logowl "Remove slain properties backup file"
+            rm -f "$SLAIN_PROPS"
+        fi
+    fi
+
+    logowl "Remove specific properties"
+
+    [ ! -f "$SLAIN_PROPS" ] && echo -e "# $MOD_NAME Slain Properties\n
+    # These props will be recovered when uninstalling $MOD_NAME\n
+    # If this file lost, these properties will be lost permanently\n
+    # You have been warned and take your own risk if you delete this file\n" >> "$SLAIN_PROPS"
+    echo -e "\n# Timestamp: $(date +"%Y%m%dT%H%M%S")\n" >> "$SLAIN_PROPS"
+
+    for props_r in $PROPS_LIST; do
+        props_r_value="$(getprop $props_r)"
+        [ -n "$props_r_value" ] && echo "${props_r}=$(getprop $props_r)" >> "$SLAIN_PROPS"
+        check_and_slayprop $props_r
+    done
+
+}
+
+soft_bootloader_spoof() {
+
+    logowl "Reset specific bootloader properties"
+
+    check_and_resetprop "ro.debuggable" "0"
+    check_and_resetprop "ro.force.debuggable" "0"
+    check_and_resetprop "ro.secure" "1"
+    check_and_resetprop "ro.adb.secure" "1"
+
+    check_and_resetprop "ro.boot.warranty_bit" "0"
+    check_and_resetprop "ro.warranty_bit" "0"
+
+    check_and_resetprop "ro.vendor.boot.warranty_bit" "0"
+    check_and_resetprop "ro.vendor.warranty_bit" "0"
+    check_and_resetprop "ro.boot.realmebootstate" "green"
+    check_and_resetprop "ro.is_ever_orange" "0"
+
+    for prop in $(resetprop | grep -oE 'ro.*.build.tags'); do
+        check_and_resetprop "$prop" "release-keys"
+    done
+    for prop in $(resetprop | grep -oE 'ro.*.build.type'); do
+        check_and_resetprop "$prop" "user"
+    done
+    check_and_resetprop "ro.build.type" "user"
+    check_and_resetprop "ro.build.tags" "release-keys"
+
+}
 
 logowl_init "$LOG_DIR"
 module_intro >> "$LOG_FILE"
@@ -213,8 +253,10 @@ print_line
 logowl "Start post-fs-data.sh"
 config_loader
 print_line
-vbmeta_disguiser && logowl "Disguise VBMeta partition properties"
-security_patch_info_disguiser && logowl "Disguise security patch properties"
+vbmeta_disguiser
+security_patch_info_disguiser
+props_slayer
+soft_bootloader_spoof
 print_line
 logowl "Check properties"
 debug_props_info
