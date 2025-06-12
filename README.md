@@ -2,7 +2,7 @@ English | [简体中文](README_ZH-CN.md)
 
 # VBMeta Disguiser / VBMeta 伪装者
 
-A Magisk module to disguise the props of vbmeta, security patch date and encryption status / 一个用于伪装 VBMeta 属性、系统安全补丁日期和加密状态的 Magisk 模块
+A Magisk module to disguise the props of vbmeta, encryption status, encryption status and remove specific properties / 一个用于伪装 VBMeta 属性、加密状态、系统安全补丁日期和删除特定属性值的 Magisk 模块
 
 ## Supported Root Solution
 
@@ -28,7 +28,10 @@ One of the purpose of writing this module is bypass the specific items in specif
 3. **`crypto_state`**: the encryption state of Data partition.
 > The encryption status will NOT be set by default. If needed, you can set this option as `encrypted` to pretend your device has been encrypted. (Support `encrypted`,`unencrypted` or `unsupported`)
 4. **`all=`、`system=`、`boot=`、`vendor=`**: all means all the partitions use the same value, as system means system partition security patch, so are boot and vendor.
-5. Since v1.2.6, you can configure security patch date in `/data/adb/vbmetadisguiser/vbmeta.conf` too.
+5. **`props_slay`**: remove ordered properties, it is set as `false` by default.
+6. **`props_list`**: a system properties list to remove system properties forever.
+> supports multi-line, one per line, please enclose the item in double quotation marks
+7. Since v1.2.6, you can configure security patch date in `/data/adb/vbmetadisguiser/vbmeta.conf` too.
 
 NOTICE: TrickyStore's configuration (`/data/adb/tricky_store/security_patch.txt`) has the highest priority, with VBMeta Disguiser's built-in configuration (`/data/adb/vbmetadisguiser/vbmeta.conf`) coming second
 
