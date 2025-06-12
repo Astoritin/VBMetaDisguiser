@@ -1,27 +1,21 @@
 #!/system/bin/sh
 MODDIR=${0%/*}
 
-CONFIG_DIR="/data/adb/vbmetadisguiser"
+. "$MODDIR/aa-util.sh"
 
+CONFIG_DIR="/data/adb/vbmetadisguiser"
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
+
 LOG_DIR="$CONFIG_DIR/logs"
-LOG_FILE="$LOG_DIR/vd_core_vm_$(date +"%Y-%m-%d_%H-%M-%S").log"
+LOG_FILE="$LOG_DIR/vd_core_vm_$(date +"%Y%m%dT%H%M%S").log"
+SLAIN_PROPS="$LOG_DIR/slain_props.prop"
 
 CONFIG_FILE_OLD="$LOG_DIR/vbmeta_old.conf"
 
-MODULE_PROP="${MODDIR}/module.prop"
-MOD_NAME="$(sed -n 's/^name=\(.*\)/\1/p' "$MODULE_PROP")"
-MOD_AUTHOR="$(sed -n 's/^author=\(.*\)/\1/p' "$MODULE_PROP")"
-MOD_VER="$(sed -n 's/^version=\(.*\)/\1/p' "$MODULE_PROP") ($(sed -n 's/^versionCode=\(.*\)/\1/p' "$MODULE_PROP"))"
-MOD_ROOT_DIR="$(dirname "$MODDIR")"
-
-MOD_INTRO="Disguise the properties of vbmeta, security patch date and encryption status."
-
-MOD_DESC_OLD="$(sed -n 's/^description=\(.*\)/\1/p' "$MODULE_PROP")"
+MOD_INTRO="Disguise the properties of vbmeta, security patch date, encryption status and remove specific properties."
+MOD_DESC_OLD="$(grep_config_var "description" "$MODULE_PROP")"
 
 TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
-SHAMIKO_DIR="${MOD_ROOT_DIR}/zygisk_shamiko"
-SENSITIVE_PROPS_DIR="${MOD_ROOT_DIR}/sensitive_props"
 
 UPDATE_REALTIME=true
 UPDATE_PERIOD=60
@@ -29,6 +23,7 @@ UPDATE_PERIOD=60
 AVB_VERSION="2.0"
 VBMETA_SIZE="4096"
 BOOT_HASH="00000000000000000000000000000000"
+
 
 config_loader() {
 
@@ -52,20 +47,19 @@ config_loader() {
 
 encryption_disguiser(){
 
-    [ -n "$CRYPTO_STATE" ] && resetprop -n "ro.crypto.state" "$CRYPTO_STATE"
+    [ -n "$CRYPTO_STATE" ] && check_and_resetprop "ro.crypto.state" "$CRYPTO_STATE"
 
 }
 
 module_status_update() {
 
-    desc_max=3
+    desc_max=4
     update_count=0
     
     vbmeta_version=$(getprop 'ro.boot.vbmeta.avb_version')
-    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' | cut -c1-8 | tr '[:lower:]' '[:upper:]')
+    vbmeta_digest=$(getprop 'ro.boot.vbmeta.digest' | cut -c1-5 | tr '[:lower:]' '[:upper:]')
     ellipsis="[..]"
     vbmeta_digest="${vbmeta_digest}${ellipsis}"
-    vbmeta_hash_alg=$(getprop 'ro.boot.vbmeta.hash_alg' | tr '[:lower:]' '[:upper:]')
     vbmeta_size=$(getprop 'ro.boot.vbmeta.size')
     device_state=$(getprop 'ro.boot.vbmeta.device_state')
     crypto_state=$(getprop 'ro.crypto.state')
@@ -74,11 +68,9 @@ module_status_update() {
     if [ -z "$vbmeta_digest" ] || echo "$vbmeta_digest" | grep -qE '^0+$'; then
         desc_vbmeta="❓VBMeta: N/A"
     else
-        desc_vbmeta="✅VBMeta: $vbmeta_digest ($vbmeta_hash_alg)"
+        desc_vbmeta="✅VBMeta: $vbmeta_digest"
         update_count=$((update_count + 1))
     fi
-    
-    desc_avb="AVB ${vbmeta_version:-N/A} (${device_state:-N/A})"
 
     [ "$crypto_state" = "encrypted" ] && desc_crypto="🔒"
     [ "$crypto_state" = "unencrypted" ] && desc_crypto="🔓"
@@ -97,6 +89,25 @@ module_status_update() {
         update_count=$((update_count + 1))
     fi
 
+    lines_count=0
+    slain_props_count=0
+    desc_slain_props=""
+    while IFS= read -r line || [ -n "$line" ]; do
+
+        lines_count=$((lines_count + 1))
+
+        line=$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+        first_char=$(printf '%s' "$line" | cut -c1)
+
+        [ -z "$line" ] && continue
+        [ "$first_char" = "#" ] && continue
+
+        slain_props_count=$((slain_props_count + 1))
+
+    done < "$SLAIN_PROPS"
+
+    [ "$slain_props_count" -ge 0 ] && update_count=$((update_count + 1)) && desc_slain_props="📃$slain_props_count properties slain"
+
     desc_active=""
     if [ "$update_count" -eq "$desc_max" ]; then
         desc_active="✅All Done."
@@ -105,11 +116,7 @@ module_status_update() {
     fi
     
     if [ -n "$desc_active" ]; then
-        if [ $((RANDOM % 2)) -eq 0 ]; then
-            DESCRIPTION="[$desc_active $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] $MOD_INTRO"
-        else
-            DESCRIPTION="[$desc_active $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] $MOD_INTRO"
-        fi
+        DESCRIPTION="[$desc_active $desc_vbmeta, $desc_ts_sp, $desc_crypto, $desc_slain_props] $MOD_INTRO"
     else
         DESCRIPTION="[❌No effect. Maybe something went wrong?] $MOD_INTRO"
     fi
@@ -120,64 +127,37 @@ module_status_update() {
 
 soft_bootloader_spoof() {
 
-    if [ -e "$SHAMIKO_DIR" ] || [ -e "$SENSITIVE_PROPS_DIR" ]; then
-        return 0
-    fi
+    check_and_resetprop "ro.boot.vbmeta.device_state" "locked"
+    check_and_resetprop "ro.boot.verifiedbootstate" "green"
+    check_and_resetprop "ro.boot.flash.locked" "1"
+    check_and_resetprop "ro.boot.veritymode" "enforcing"
 
-    check_before_resetprop "ro.boot.vbmeta.device_state" "locked"
-    check_before_resetprop "ro.boot.verifiedbootstate" "green"
-    check_before_resetprop "ro.boot.flash.locked" "1"
-    check_before_resetprop "ro.boot.veritymode" "enforcing"
-    check_before_resetprop "ro.boot.warranty_bit" "0"
-    check_before_resetprop "ro.warranty_bit" "0"
-    check_before_resetprop "ro.debuggable" "0"
-    check_before_resetprop "ro.force.debuggable" "0"
-    check_before_resetprop "ro.secure" "1"
-    check_before_resetprop "ro.adb.secure" "1"
-    check_before_resetprop "ro.build.type" "user"
-    check_before_resetprop "ro.build.tags" "release-keys"
-    check_before_resetprop "ro.vendor.boot.warranty_bit" "0"
-    check_before_resetprop "ro.vendor.warranty_bit" "0"
-    check_before_resetprop "vendor.boot.vbmeta.device_state" "locked"
-    check_before_resetprop "vendor.boot.verifiedbootstate" "green"
+    check_and_resetprop "vendor.boot.vbmeta.device_state" "locked"
+    check_and_resetprop "vendor.boot.verifiedbootstate" "green"
 
-    check_before_resetprop "sys.oem_unlock_allowed" "0"
-    check_before_resetprop "ro.oem_unlock_supported" "0"
+    check_and_resetprop "sys.oem_unlock_allowed" "0"
+    check_and_resetprop "ro.oem_unlock_supported" "0"
+    
+    check_and_resetprop "ro.boot.realme.lockstate" "1"
 
-    check_before_resetprop "ro.boot.realmebootstate" "green"
-    check_before_resetprop "ro.boot.realme.lockstate" "1"
+    check_and_resetprop "ro.secureboot.lockstate" "locked"
 
-    check_before_resetprop "ro.secureboot.lockstate" "locked"
+    check_and_resetprop "init.svc.flash_recovery" "stopped"
 
-    check_before_resetprop "init.svc.flash_recovery" "stopped"
-
-    find_keyword_before_resetprop "ro.bootmode" "recovery" "unknown"
-    find_keyword_before_resetprop "ro.boot.bootmode" "recovery" "unknown"
-    find_keyword_before_resetprop "vendor.boot.bootmode" "recovery" "unknown"
+    match_and_resetprop "ro.bootmode" "recovery" "unknown"
+    match_and_resetprop "ro.boot.bootmode" "recovery" "unknown"
+    match_and_resetprop "vendor.boot.bootmode" "recovery" "unknown"
 
 }
 
-debug_props_info() {
+soft_selinux_spoof() {
 
-    print_line "45" "-"
-    logowl "Security Patch date properties"
-    print_line "45" " "
-    fetch_prop "ro.build.version.security_patch"
-    fetch_prop "ro.system.build.security_patch"
-    fetch_prop "ro.vendor.build.security_patch"
-    print_line "45" " "
-    logowl "VBMeta partition properties"
-    print_line "45" " "
-    fetch_prop "ro.boot.vbmeta.device_state"
-    fetch_prop "ro.boot.vbmeta.avb_version"
-    fetch_prop "ro.boot.vbmeta.hash_alg"
-    fetch_prop "ro.boot.vbmeta.size"
-    fetch_prop "ro.boot.vbmeta.digest"
-    print_line "45" " "
-    logowl "Data partition properties"
-    print_line "45" " "
-    fetch_prop "ro.crypto.state"
-    print_line "45" "-"
+    check_and_resetprop "ro.boot.selinux" "enforcing"
+
+    if [ "$(toybox cat /sys/fs/selinux/enforce)" = "0" ]; then
+        chmod 640 /sys/fs/selinux/enforce
+        chmod 440 /sys/fs/selinux/policy
+    fi
 
 }
 
@@ -194,8 +174,6 @@ vbmeta_disguiser() {
 
 }
 
-. "$MODDIR/aa-util.sh"
-
 logowl_init "$LOG_DIR"
 module_intro >> "$LOG_FILE"
 show_system_info
@@ -204,10 +182,14 @@ logowl "Start service.sh"
 print_line
 [ -f "$CONFIG_FILE" ] && cp "$CONFIG_FILE" "$CONFIG_FILE_OLD"
 config_loader
-vbmeta_disguiser && logowl "Disguise VBMeta partition properties"
-encryption_disguiser && logowl "Disguise Data partition encryption property"
-soft_bootloader_spoof && logowl "Reset specific bootloader properties"
-module_status_update && logowl "Update module description"
+logowl "Disguise Data partition encryption properties"
+encryption_disguiser
+logowl "Reset specific bootloader properties"
+soft_bootloader_spoof
+logowl "Reset specific SELinux properties"
+soft_selinux_spoof
+logowl "Update module description"
+module_status_update
 logowl "Check properties"
 debug_props_info
 logowl "service.sh case closed!"
@@ -224,7 +206,7 @@ logowl "service.sh case closed!"
         if [ ! -f "$CONFIG_FILE_OLD" ]; then
             [ -f "$CONFIG_FILE" ] && cp "$CONFIG_FILE" "$CONFIG_FILE_OLD"
         elif ! file_compare "$CONFIG_FILE_OLD" "$CONFIG_FILE"; then
-            print_line "45" "*"
+            print_line "51"
             logowl "Detect changes in $CONFIG_FILE"
             logowl "Timestamp: $(date +"%Y-%m-%d %H:%M:%S")"
             logowl "Current update period: ${UPDATE_PERIOD}s"
