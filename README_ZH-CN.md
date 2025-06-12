@@ -29,7 +29,9 @@
 3. **`crypto_state`**: Data 分区的加密状态。
 > 加密状态默认情况下不会被设置。若有需求，你可以手动设置该选项为 `encrypted` 以伪装设备已被加密。(支持 `encrypted` 已加密,`unencrypted` 未加密或 `unsupported`不支持加密)
 4. **`all=`、`system=`、`boot=`、`vendor=`**: all 表示所有分区都使用同一个值，system表示系统分区的补丁日期，boot表示boot分区的补丁日期，vendor表示供应商分区补丁日期。
-5. 从v1.2.6开始，你也可以在 `/data/adb/vbmetadisguiser/vbmeta.conf` 中设定想要伪装的安全补丁日期。
+5. **`props_slay`**: 移除指定的属性值，默认值为`false`(禁用)。
+6. **`props_list`**: 一个用于永久移除系统属性值的系统属性清单。
+7. 从v1.2.6开始，你也可以在 `/data/adb/vbmetadisguiser/vbmeta.conf` 中设定想要伪装的安全补丁日期。
 - 注意：[TrickyStore](https://github.com/5ec1cff/TrickyStore)的配置 (`/data/adb/tricky_store/security_patch.txt`) 优先级最高，其次才是VBMeta Disguiser的 (`/data/adb/vbmetadisguiser/vbmeta.conf`) 内置的配置
 
 ## 日志
