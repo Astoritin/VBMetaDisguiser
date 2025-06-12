@@ -17,7 +17,6 @@ is_magisk() {
         *) MAGISK_BRANCH_NAME="Magisk" ;;
     esac
     DETECT_MAGISK="true"
-    DETECT_MAGISK_DETAIL="$MAGISK_BRANCH_NAME (${MAGISK_VER_CODE:-$MAGISK_V_VER_CODE})"
     return 0
 
 }
@@ -25,7 +24,6 @@ is_magisk() {
 is_kernelsu() {
     if [ -n "$KSU" ]; then
         DETECT_KSU="true"
-        DETECT_KSU_DETAIL="KernelSU (kernel:$KSU_KERNEL_VER_CODE, ksud:$KSU_VER_CODE)"
         ROOT_SOL="KernelSU"
         return 0
     fi
@@ -35,7 +33,6 @@ is_kernelsu() {
 is_apatch() {
     if [ -n "$APATCH" ]; then
         DETECT_APATCH="true"
-        DETECT_APATCH_DETAIL="APatch ($APATCH_VER_CODE)"
         ROOT_SOL="APatch"
         return 0
     fi
@@ -53,50 +50,23 @@ install_env_check() {
     is_magisk && ROOT_SOL_COUNT=$((ROOT_SOL_COUNT + 1))
 
     if [ "$DETECT_KSU" = "true" ]; then
+        ROOT_SOL="KernelSU"
         ROOT_SOL_DETAIL="KernelSU (kernel:$KSU_KERNEL_VER_CODE, ksud:$KSU_VER_CODE)"
-        if [ "$ROOT_SOL_COUNT" -gt 1 ]; then
-            ROOT_SOL="Multiple"
-            if [ "$DETECT_APATCH" = "true" ] && [ "$DETECT_MAGISK" = "true" ]; then
-                ROOT_SOL_DETAIL="Multiple (${DETECT_MAGISK_DETAIL};${DETECT_KSU_DETAIL};${DETECT_APATCH_DETAIL})"
-            elif [ "$DETECT_APATCH" = "true" ]; then
-                ROOT_SOL_DETAIL="Multiple (${DETECT_KSU_DETAIL};${DETECT_APATCH_DETAIL})"
-            elif [ "$DETECT_MAGISK" = "true" ]; then
-                ROOT_SOL_DETAIL="Multiple (${DETECT_MAGISK_DETAIL};${DETECT_KSU_DETAIL})"
-            fi
-        elif [ "$ROOT_SOL_COUNT" -eq 1 ]; then
-            ROOT_SOL="KernelSU"
-        fi
     elif [ "$DETECT_APATCH" = "true" ]; then
+        ROOT_SOL="APatch"
         ROOT_SOL_DETAIL="APatch ($APATCH_VER_CODE)"
-        if [ "$ROOT_SOL_COUNT" -gt 1 ] && [ "$DETECT_MAGISK" = "true" ]; then
-            ROOT_SOL="Multiple"
-            ROOT_SOL_DETAIL="Multiple (${DETECT_MAGISK_DETAIL};${DETECT_APATCH_DETAIL})"
-        elif [ "$ROOT_SOL_COUNT" -eq 1 ]; then
-            ROOT_SOL="APatch"
-        fi
     elif [ "$DETECT_MAGISK" = "true" ]; then
         ROOT_SOL="Magisk"
         ROOT_SOL_DETAIL="$MAGISK_BRANCH_NAME (${MAGISK_VER_CODE:-$MAGISK_V_VER_CODE})"
     fi
 
-    if [ "$ROOT_SOL_COUNT" -lt 1 ]; then
+    if [ "$ROOT_SOL_COUNT" -gt 1 ]; then
+        ROOT_SOL="Multiple"
+        ROOT_SOL_DETAIL="Multiple"
+    elif [ "$ROOT_SOL_COUNT" -lt 1 ]; then
         ROOT_SOL="Unknown"
         ROOT_SOL_DETAIL="Unknown"
     fi
-
-}
-
-module_intro() {
-
-    install_env_check
-    print_line
-    logowl "$MOD_NAME"
-    logowl "By $MOD_AUTHOR"
-    logowl "Version: $MOD_VER"
-    logowl "Root: $ROOT_SOL_DETAIL"
-    logowl "Timestamp: $(date +"%Y-%m-%d %H:%M:%S")"
-    logowl "Module dir: $MODDIR"
-    print_line
 
 }
 
@@ -136,6 +106,7 @@ logowl() {
         "WARN") LOG_MSG_PREFIX="- Warn: " ;;
         "ERROR") LOG_MSG_PREFIX="! ERROR: " ;;
         "FATAL") LOG_MSG_PREFIX="× FATAL: " ;;
+        "*" ) LOG_MSG_PREFIX="* " ;; 
         " ") LOG_MSG_PREFIX="  " ;;
         "-") LOG_MSG_PREFIX="" ;;
         *) LOG_MSG_PREFIX="- " ;;
@@ -143,9 +114,9 @@ logowl() {
 
     if [ -n "$LOG_FILE" ]; then
         if [ "$LOG_MSG_LEVEL" = "ERROR" ] || [ "$LOG_MSG_LEVEL" = "FATAL" ]; then
-            echo "----------------------------------------" >> "$LOG_FILE"
+            echo "---------------------------------------------------" >> "$LOG_FILE"
             echo "${LOG_MSG_PREFIX}${LOG_MSG}" >> "$LOG_FILE"
-            echo "----------------------------------------" >> "$LOG_FILE"
+            echo "---------------------------------------------------" >> "$LOG_FILE"
         elif [ "$LOG_MSG_LEVEL" = "-" ]; then
             echo "$LOG_MSG" >> "$LOG_FILE"
         else
@@ -154,9 +125,9 @@ logowl() {
     else
         if command -v ui_print >/dev/null 2>&1; then
             if [ "$LOG_MSG_LEVEL" = "ERROR" ] || [ "$LOG_MSG_LEVEL" = "FATAL" ]; then
-                ui_print "----------------------------------------"
+                ui_print "---------------------------------------------------"
                 ui_print "${LOG_MSG_PREFIX}${LOG_MSG}"
-                ui_print "----------------------------------------"
+                ui_print "---------------------------------------------------"
             elif [ "$LOG_MSG_LEVEL" = "-" ]; then
                 ui_print "$LOG_MSG"
             else
@@ -170,11 +141,20 @@ logowl() {
 
 print_line() {
 
-    length=${1:-45}
+    length=${1:-51}
     symbol=${2:--}
 
     line=$(printf "%-${length}s" | tr ' ' "$symbol")
     logowl "$line" "-"
+
+}
+
+grep_config_var() {
+    regex="s/^$1=//p"
+    config_file="$2"
+
+    [ -z "$config_file" ] && config_file="/system/build.prop"
+    cat "$config_file" 2>/dev/null | dos2unix | sed -n "$regex" | head -n 1
 
 }
 
@@ -274,6 +254,9 @@ check_value_safety() {
     result_check_value=$?
 
     if [ "$result_check_key" = 0 ] && [ "$result_check_value" = 0 ]; then
+        if echo "$value" | grep -q '^'; then
+            value=$(echo "$value" | sed ':loop;N;N;y/\n/ /;P;D')
+        fi
         logowl "Verified $key=$value"
         return 0
     else
@@ -321,6 +304,9 @@ verify_var() {
 
     if echo "$config_var_value" | grep -qE "$validation_pattern"; then
         export "$script_var_name"="$config_var_value"
+        if echo "$config_var_value" | grep -q '^'; then
+            config_var_value=$(echo "$config_var_value" | sed ':loop;N;N;y/\n/ /;P;D')
+        fi
         logowl "Set $script_var_name=$config_var_value" "TIPS"
         return 0
     else
@@ -370,6 +356,24 @@ show_system_info() {
 
 }
 
+module_intro() {
+
+    MODULE_PROP="$MODDIR/module.prop"
+    MOD_NAME="$(grep_config_var "name" "$MODULE_PROP")"
+    MOD_AUTHOR="$(grep_config_var "author" "$MODULE_PROP")"
+    MOD_VER="$(grep_config_var "version" "$MODULE_PROP") ($(grep_config_var "versionCode" "$MODULE_PROP"))"
+
+    install_env_check
+    print_line
+    logowl "$MOD_NAME"
+    logowl "By $MOD_AUTHOR"
+    logowl "Version: $MOD_VER"
+    logowl "Root: $ROOT_SOL_DETAIL"
+    logowl "Timestamp: $(date +"%Y-%m-%d %H:%M:%S")"
+    print_line
+
+}
+
 file_compare() {
     file_a="$1"
     file_b="$2"
@@ -414,7 +418,7 @@ extract() {
 
     unzip $opts "$zip" "$file" -d "$dir" >&2
     [ -f "$file_path" ] || abort_verify "$file does NOT exist!"
-    logowl "Extract $file → $file_path" >&1
+    logowl "Extract $file -> $file_path" >&1
 
     unzip $opts "$zip" "$file.sha256" -d "$VERIFY_DIR" >&2
     [ -f "$hash_path" ] || abort_verify "$file.sha256 does NOT exist!"
@@ -452,6 +456,31 @@ set_permission_recursive() {
 
 }
 
+check_duplicate_items() {
+
+    itemd=$1
+    filed=$2
+
+    if grep -q "^$itemd$" "$filed"; then
+        return 1
+    else
+        return 0
+    fi
+}
+
+clean_duplicate_items() {
+
+    filed=$1
+
+    [ -z "$filed" ] && return 1
+    [ ! -f "$filed" ] && return 2
+
+    awk '!seen[$0]++' "$filed" > "${filed}.tmp"
+    mv "${filed}.tmp" "$filed"
+    return 0
+
+}
+
 fetch_prop() {
     prop_name=$1
     prop_current_value=$(getprop "$prop_name")
@@ -466,16 +495,31 @@ fetch_prop() {
 
 }
 
-check_before_resetprop() {
+check_and_resetprop() {
     prop_name=$1
     prop_expect_value=$2
     prop_current_value=$(resetprop "$prop_name")
 
-    [ -z "$prop_current_value" ] || [ "$prop_current_value" = "$prop_expect_value" ] || resetprop "$prop_name" "$prop_expect_value"
+    [ -z "$prop_current_value" ] && return 1
+
+    [ "$prop_current_value" = "$prop_expect_value" ] || resetprop "$prop_name" "$prop_expect_value"
+    result_check_and_resetprop=$?
+    logowl "Execute: resetprop $prop_name $prop_expect_value (code: $result_check_and_resetprop)"
 
 }
 
-find_keyword_before_resetprop() {
+check_and_slayprop() {
+    prop_name=$1
+    prop_current_value=$(resetprop "$prop_name")
+
+    [ -z "$prop_current_value" ] && return 1
+    
+    resetprop -p --delete $prop_name
+    result_check_and_slayprop=$?
+    logowl "Execute: resetprop -p --delete $prop_name (code: $result_check_and_slayprop)"
+}
+
+match_and_resetprop() {
     prop_name="$1"
     prop_contains_keyword="$2"
     prop_expect_value="$3"
@@ -485,8 +529,71 @@ find_keyword_before_resetprop() {
     
     if echo "$prop_current_value" | grep -q "$prop_contains_keyword"; then
         resetprop "$prop_name" "$prop_expect_value"
-        return 0
+        result_check_and_resetprop=$?
+        logowl "Execute: resetprop $prop_name $prop_expect_value (code: $result_check_and_resetprop)"
     fi
 
 }
 
+fetch_package_path_from_pm() {
+    package_name=$1
+    output_pm=$(pm path "$package_name")
+
+    [ -z "$output_pm" ] && return 1
+
+    package_path=$(echo "$output_pm" | cut -d':' -f2- | sed 's/^://' )
+
+    echo "$package_path"    
+}
+
+uninstall_package() {
+
+    package_name="$1"
+
+    pm uninstall "$package_name"
+    result_uninstall_package=$?
+
+    return "$result_uninstall_package"
+
+}
+
+install_package() {
+
+    package_path="$1"
+
+    cp "$package_path" "$TMP_DIR"
+
+    package_basename=$(basename "$package_path")
+    package_tmp="$TMP_DIR/$package_basename"
+
+    pm install -i "com.android.vending" "$package_tmp"
+    result_install_package=$?
+
+    rm -f "$package_tmp"
+    return "$result_install_package"    
+
+}
+
+debug_props_info() {
+
+    print_line "51"
+    logowl "Security patch date properties"
+    print_line "51"
+    fetch_prop "ro.build.version.security_patch"
+    fetch_prop "ro.system.build.security_patch"
+    fetch_prop "ro.vendor.build.security_patch"
+    print_line "51"
+    logowl "VBMeta partition properties"
+    print_line "51"
+    fetch_prop "ro.boot.vbmeta.device_state"
+    fetch_prop "ro.boot.vbmeta.avb_version"
+    fetch_prop "ro.boot.vbmeta.hash_alg"
+    fetch_prop "ro.boot.vbmeta.size"
+    fetch_prop "ro.boot.vbmeta.digest"
+    print_line "51"
+    logowl "Data partition properties"
+    print_line "51"
+    fetch_prop "ro.crypto.state"
+    print_line "51"
+
+}
