@@ -8,34 +8,18 @@ CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 
 LOG_DIR="$CONFIG_DIR/logs"
 LOG_FILE="$LOG_DIR/vd_core_sp_$(date +"%Y%m%dT%H%M%S").log"
-SLAIN_PROPS="$LOG_DIR/slain_props.prop"
 
 TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
 
-SECURITY_PATCH_DATE="2025-06-01"
+addon_d_slay=false
+install_recovery_slay=false
 
-AVB_VERSION="2.0"
-VBMETA_SIZE="4096"
-BOOT_HASH="00000000000000000000000000000000"
+check_props() {
 
-PROPS_SLAY=false
-PROPS_LIST=""
-
-config_loader() {
-
-    logowl "Load config"
-
-    avb_version=$(get_config_var "avb_version" "$CONFIG_FILE")
-    vbmeta_size=$(get_config_var "vbmeta_size" "$CONFIG_FILE")
-    boot_hash=$(get_config_var "boot_hash" "$CONFIG_FILE")
-    props_slay=$(get_config_var "props_slay" "$CONFIG_FILE")
-    props_list=$(get_config_var "props_list" "$CONFIG_FILE")
-
-    verify_var "avb_version" "$avb_version" "^[1-9][0-9]*\.[0-9]*$|^[1-9][0-9]*$"
-    verify_var "vbmeta_size" "$vbmeta_size" "^[1-9][0-9]*$"
-    verify_var "boot_hash" "$boot_hash" "^[0-9a-fA-F]+$"
-    verify_var "props_slay" "$props_slay" "^(true|false)$"
-    verify_var "props_list" "$props_list" "^[a-zA-Z0-9/_\. @-]*$"
+    logowl "Security patch date properties" ">"
+    see_prop "ro.build.version.security_patch"
+    see_prop "ro.system.build.security_patch"
+    see_prop "ro.vendor.build.security_patch"
 
 }
 
@@ -44,7 +28,8 @@ date_format_convert() {
     key_name="$1"
     key_date_value="$2"
 
-    [ -z "$key_name" ] || [ -z "$key_date_value" ] && return 1
+    [ -z "$key_name" ] && return 1
+    [ -z "$key_date_value" ] && return 1
 
     len=$(echo "$key_date_value" | awk '{print length}')
     case "$len" in
@@ -75,7 +60,7 @@ date_format_convert() {
     esac
 
     eval "$key_name=\"$formatted_date\""
-    logowl "Set $key_name=$formatted_date" "TIPS"
+    logowl "Set $key_name=$formatted_date" ">"
 
 }
 
@@ -86,13 +71,13 @@ ts_sp_config_simple() {
 
     [ -z "$patch_level" ] && return 1
 
-    verify_var "patch_level" "$patch_level" "^[0-9]{8}$"
-    date_format_convert "PATCH_LEVEL" "$PATCH_LEVEL"
+    date_format_convert "patch_level" "$patch_level"
 
-    if [ -n "$PATCH_LEVEL" ]; then
-        resetprop "ro.build.version.security_patch" "$PATCH_LEVEL"
-        resetprop "ro.vendor.build.security_patch" "$PATCH_LEVEL"
-        resetprop "ro.system.build.security_patch" "$PATCH_LEVEL"
+    if [ -n "$patch_level" ]; then
+        check_and_resetprop "ro.build.version.security_patch" "$patch_level"
+        check_and_resetprop "ro.vendor.build.security_patch" "$patch_level"
+        check_and_resetprop "ro.system.build.security_patch" "$patch_level"
+        return 0
     fi
 
 }
@@ -103,49 +88,46 @@ ts_sp_config_advanced() {
     ts_all=$(get_config_var "all" "$TRICKY_STORE_CONFIG_FILE")
     
     if [ -n "$ts_all" ]; then
-        verify_var "ts_all" "$ts_all" "^([0-9]{6}|[0-9]{8}|[0-9]{4}-[0-9]{2}-[0-9]{2})$"
-        date_format_convert "TS_ALL" "$TS_ALL"
-    else
-        ts_system=$(get_config_var "system" "$TRICKY_STORE_CONFIG_FILE")
-        ts_boot=$(get_config_var "boot" "$TRICKY_STORE_CONFIG_FILE")
-        ts_vendor=$(get_config_var "vendor" "$TRICKY_STORE_CONFIG_FILE")
-        
-        [ -z "$ts_system" ] && [ -z "$ts_boot" ] && [ -z "$ts_vendor" ] && return 1
-
-        verify_var "ts_system" "$ts_system" "^([0-9]{6}|[0-9]{8}|[0-9]{4}-[0-9]{2}-[0-9]{2})$"
-        verify_var "ts_boot" "$ts_boot" "^([0-9]{6}|[0-9]{8}|[0-9]{4}-[0-9]{2}-[0-9]{2}|yes|no)$"
-        verify_var "ts_vendor" "$ts_vendor" "^([0-9]{6}|[0-9]{8}|[0-9]{4}-[0-9]{2}-[0-9]{2}|yes|no)$"
-        
-        [ -n "$TS_BOOT" ] && [ "$TS_BOOT" != "yes" ] && [ "$TS_BOOT" != "no" ] && date_format_convert "TS_BOOT" "$TS_BOOT"
-        [ -n "$TS_VENDOR" ] && [ "$TS_VENDOR" != "yes" ] && [ "$TS_VENDOR" != "no" ] && date_format_convert "TS_VENDOR" "$TS_VENDOR"
-
+        date_format_convert "ts_all" "$ts_all"
+        check_and_resetprop "ro.build.version.security_patch" "$ts_all"
+        check_and_resetprop "ro.vendor.build.security_patch" "$ts_all"
+        check_and_resetprop "ro.system.build.security_patch" "$ts_all"
+        return 0
     fi
 
-    if [ -n "$TS_ALL" ]; then
-        resetprop "ro.build.version.security_patch" "$TS_ALL"
-        resetprop "ro.vendor.build.security_patch" "$TS_ALL"
-        resetprop "ro.system.build.security_patch" "$TS_ALL"
-    else
-        [ -n "$TS_SYSTEM" ] && resetprop "ro.build.version.security_patch" "$TS_SYSTEM"
-        if [ -n "$TS_BOOT" ]; then
-            if [ "$TS_BOOT" = "yes" ]; then
-                resetprop "ro.system.build.security_patch" "$TS_SYSTEM"
-            elif [ "$TS_BOOT" = "no" ]; then
-                logowl "boot=no, skip disguising" "WARN"
-            else
-                resetprop "ro.system.build.security_patch" "$TS_BOOT"
-            fi
-        fi
-        if [ -n "$TS_VENDOR" ]; then
-            if [ "$TS_VENDOR" = "yes" ]; then
-                resetprop "ro.system.build.security_patch" "$TS_SYSTEM"
-            elif [ "$TS_VENDOR" = "no" ]; then
-                logowl "vendor=no, skip disguising" "WARN"
-            else
-                resetprop "ro.vendor.build.security_patch" "$TS_VENDOR"
-            fi
+    ts_system=$(get_config_var "system" "$TRICKY_STORE_CONFIG_FILE")
+    ts_boot=$(get_config_var "boot" "$TRICKY_STORE_CONFIG_FILE")
+    ts_vendor=$(get_config_var "vendor" "$TRICKY_STORE_CONFIG_FILE")
+        
+    [ -z "$ts_system" ] && [ -z "$ts_boot" ] && [ -z "$ts_vendor" ] && return 1
+
+    if [ -n "$ts_system" ]; then
+        check_and_resetprop "ro.build.version.security_patch" "$ts_system"
+    fi
+
+    if [ -n "$ts_boot" ]; then
+        if [ "$ts_boot" = "yes" ]; then
+            check_and_resetprop "ro.system.build.security_patch" "$ts_system"
+        elif [ "$ts_boot" = "no" ]; then
+            logowl "boot=no, skip disguising"
+        else
+            date_format_convert "ts_boot" "$ts_boot"
+            check_and_resetprop "ro.system.build.security_patch" "$ts_boot"
         fi
     fi
+
+    if [ -n "$ts_vendor" ]; then
+        if [ "$ts_vendor" = "yes" ]; then
+            check_and_resetprop "ro.system.build.security_patch" "$ts_system"
+        elif [ "$ts_vendor" = "no" ]; then
+            logowl "vendor=no, skip disguising"
+        else
+            date_format_convert "ts_vendor" "$ts_vendor"
+            check_and_resetprop "ro.vendor.build.security_patch" "$ts_vendor"
+        fi
+    fi
+
+    return 0
 
 }
 
@@ -173,73 +155,116 @@ security_patch_info_disguiser() {
 
 }
 
-vbmeta_disguiser() {
+mirror_make_node() {
 
-    logowl "Disguise VBMeta partition properties"
+    node_path=$1
 
-    resetprop "ro.boot.vbmeta.device_state" "locked"
-    resetprop "ro.boot.vbmeta.hash_alg" "sha256"
-
-    if [ -s "$CONFIG_FILE" ]; then
-        resetprop "ro.boot.vbmeta.digest" "$BOOT_HASH"
-        resetprop "ro.boot.vbmeta.size" "$VBMETA_SIZE"
-        resetprop "ro.boot.vbmeta.avb_version" "$AVB_VERSION"
+    if [ -z "$node_path" ]; then
+        logowl "node_path is NOT ordered! (5)" "ERROR"
+        return 5
+    elif [ ! -e "$node_path" ]; then
+        logowl "$node_path does NOT exist! (6)" "ERROR"
+        return 6
     fi
 
-}
+    node_path_parent_dir=$(dirname "$node_path")
+    mirror_parent_dir="$MODDIR$node_path_parent_dir"
+    mirror_node_path="$MODDIR$node_path"
 
-props_slayer() {
-    
-    [ -z "$PROPS_LIST" ] && [ -z "$PROPS_SLAY" ] && return 1
+    if [ ! -d "$mirror_parent_dir" ]; then
+        logowl "Parent dir $mirror_parent_dir does NOT exist"
+        mkdir -p "$mirror_parent_dir"
+        logowl "Create parent dir: $mirror_parent_dir"
+    fi
 
-    if [ "$PROPS_SLAY" = false ]; then
-        logowl "Properties Slayer is disabled"
-        if [ -f "$SLAIN_PROPS" ]; then
-            logowl "Restore slain properties"
-            resetprop -p -f "$SLAIN_PROPS"
-            logowl "Remove slain properties backup file"
-            rm -f "$SLAIN_PROPS"
+    if [ ! -e "$mirror_node_path" ]; then
+        logowl "Node $mirror_node_path does NOT exist"
+        mknod "$mirror_node_path" c 0 0
+        result_make_node="$?"
+        logowl "mknod $mirror_node_path c 0 0"
+        if [ $result_make_node -eq 0 ]; then
+            return 0
+        else
+            return $result_make_node
         fi
+    else
+        logowl "Node $mirror_node_path exists already"
         return 0
     fi
 
-    logowl "Remove specific properties"
+}
 
-    for props_r in $PROPS_LIST; do
-        props_r_value="$(getprop $props_r)"
-        [ -n "$props_r_value" ] && echo "${props_r}=$(getprop $props_r)" >> "$SLAIN_PROPS"
-        check_and_slayprop $props_r
-    done
-
-    clean_duplicate_items "$SLAIN_PROPS"
+check_make_node_support() {
+    
+    logowl "$MOD_NAME is running on $ROOT_SOL"
+    if [ "$DETECT_KSU" = true ] || [ "$DETECT_APATCH" = true ]; then
+        logowl "Make Node support is present"
+        MN_SUPPORT=true
+    elif [ "$DETECT_MAGISK" = true ]; then
+        if [ $MAGISK_V_VER_CODE -ge 28102 ]; then
+            logowl "Make Node support is present"
+            MN_SUPPORT=true
+        else
+            logowl "Make Node support is NOT present" "WARN"
+            MN_SUPPORT=false
+        fi
+    fi
 
 }
 
-soft_bootloader_spoof() {
+addon_d_slayer() {
 
-    logowl "Reset specific bootloader properties"
+    addon_d_path="/system/addon.d"
 
-    check_and_resetprop "ro.debuggable" "0"
-    check_and_resetprop "ro.force.debuggable" "0"
-    check_and_resetprop "ro.secure" "1"
-    check_and_resetprop "ro.adb.secure" "1"
+    addon_d_slay=$(get_config_var "addon_d_slay" "$CONFIG_FILE")
+    [ -n "$addon_d_slay" ] && return 1
 
-    check_and_resetprop "ro.boot.warranty_bit" "0"
-    check_and_resetprop "ro.warranty_bit" "0"
+    if [ "$addon_d_slay" = false ]; then
+        logowl "Flag addon_d_slay=false"
+        return 0
+    elif [ "$addon_d_slay" = true ]; then
+        if [ "$MN_SUPPORT" = true ]; then
+            logowl "Slay addon.d"
+            mirror_make_node "$addon_d_path"
+        else
+            logowl "Flag MN_SUPPORT=false"
+            logowl "Skip addon.d slayer"
+        fi
+    fi
 
-    check_and_resetprop "ro.vendor.boot.warranty_bit" "0"
-    check_and_resetprop "ro.vendor.warranty_bit" "0"
-    check_and_resetprop "ro.boot.realmebootstate" "green"
-    check_and_resetprop "ro.is_ever_orange" "0"
+}
 
-    for prop in $(resetprop | grep -oE 'ro.*.build.tags'); do
-        check_and_resetprop "$prop" "release-keys"
-    done
-    for prop in $(resetprop | grep -oE 'ro.*.build.type'); do
-        check_and_resetprop "$prop" "user"
-    done
-    check_and_resetprop "ro.build.type" "user"
-    check_and_resetprop "ro.build.tags" "release-keys"
+install_recovery_script_slayer() {
+
+    install_recovery_script_path="/system/bin/install-recovery.sh
+/system/etc/install-recovery.sh
+/system/etc/recovery-resource.dat
+/system/recovery-from-boot.p
+/system/vendor/bin/install-recovery.sh
+/system/vendor/etc/install-recovery.sh
+/system/vendor/recovery-from-boot.p
+/system/vendor/etc/recovery-resource.dat"
+
+    install_recovery_slay=$(get_config_var "install_recovery_slay" "$CONFIG_FILE")
+    [ -z "$install_recovery_slay" ] && return 1
+
+    if [ "$install_recovery_slay" = false ]; then
+        logowl "Flag install_recovery_slay=false"
+        return 0
+    elif [ "$install_recovery_slay" = true ]; then
+        if [ "$MN_SUPPORT" = true ]; then
+            logowl "Slay install-recovery.sh"
+            for irsh in $install_recovery_script_path; do
+                if [ -f "$irsh" ]; then
+                    logowl "Process: $irsh"
+                    mirror_make_node "$irsh"
+                fi
+            done
+        else
+            logowl "Flag MN_SUPPORT=false"
+            logowl "Skip install-recovery.sh slayer"
+        fi
+    fi
 
 }
 
@@ -248,14 +273,16 @@ module_intro >> "$LOG_FILE"
 show_system_info
 print_line
 logowl "Start post-fs-data.sh"
-config_loader
+[ -n "$MODDIR" ] && rm -rf "$MODDIR/system"
 print_line
-vbmeta_disguiser
+logowl "Properties before disguise"
+check_props
 security_patch_info_disguiser
-props_slayer
-soft_bootloader_spoof
+check_make_node_support
+addon_d_slayer
+install_recovery_script_slayer
 print_line
-logowl "Check properties"
-debug_props_info
+logowl "Properties after disguise"
+check_props
 print_line
 logowl "post-fs-data.sh case closed!"
