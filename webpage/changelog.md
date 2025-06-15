@@ -1,27 +1,28 @@
 ## VBMeta 伪装者 / VBMeta Disguiser
 
-A Magisk module to disguise the props of vbmeta, security patch date, encryption status and delete specific properties / 一个用于伪装 VBMeta 属性、系统安全补丁日期、加密状态和删除特定属性值的 Magisk 模块
+一个用于伪装 VBMeta 属性、加密状态、系统安全补丁日期和删除特定属性值的 Magisk 模块
+/ A Magisk module to disguise the props of vbmeta, encryption status, encryption status and remove specific properties
 
-### 1.3.3
+### 1.3.5
 
-- Add new feature: Properties Slayer
-- New config in `vbmeta.conf`: `props_slay=false`, which means this feature is disabled as default
-- New config in `vbmeta.conf`: `props_list=`, which means the properties you want VBMeta Disguiser to remove
-> For example: Set `props_slay=true` to enable Properties Slayer
-> `props_list=persist.sys.spoof.gms` means delete `persist.sys.spoof.gms` from system properties list forever
-> `props_list` supports multi-line, one per line, please enclose the item in double quotation marks
-- These properties will be back (restored) as setting `props_slay=false` and finishing reboot or uninstalling VBMeta Disguiser in normal way
-- NOTICE: properties backup file are located in `/data/adb/vbmetadisguiser/logs/slain_prop.prop`, please do NOT remove it casually
-> WARN: if you remove it, these properties will be lost forever, which means you can only unroot and root again to restore properties
-- Sync the changes of aa-util.sh in Bloatware Slayer
+- Fixed an issue which caused Properties Slayer ignoring certain ROMs' behavior adding properties after boot completed
+> Thanks a lot for iabeefe reporting this [issue](https://github.com/Astoritin/VBMetaDisguiser/issues/2)
+- To apply properties removal, you need to reboot your device once or twice.
+> This is NOT a bug. According to how resetprop works, you have to do it. You may see item `Property Modified (10)` in detector Native Test if only reboot once.
+- Add feature back: install-recovery.sh Slayer, supports removing file install-recovery.sh systemlessly, disabled by default
+> You can set `install_recovery_slay=true` to enable this feature in config file `/data/adb/vbmetadisguiser/vbmeta.conf`
+- Add feature back: addon.d Slayer, supports removing directory addon.d systemlessly, disabled by default
+> You can set `addon_d_slay=true` to enable this feature in config file `/data/adb/vbmetadisguiser/vbmeta.conf`
+- Support updating VBmeta partition properties, data partition properties and removing ordered properties automatically
+- Remove large amount of useless codes to reduce module file size
 
-- 添加新功能：删除props属性值
-- `vbmeta.conf` 中的新配置: `props_slay=false`，代表着该功能默认被禁用
-- `vbmeta.conf` 中的新配置: `props_list=`, 代表着你需要 VBMeta Disguiser 移除的属性值
-> 举个例子：设置 `props_slay=true` 以启用属性值移除功能
-> `props_list=persist.sys.spoof.gms` 即从系统属性值清单中永远删除属性值 `persist.sys.spoof.gms` 
-> `props_list` 支持多行，一行一个，请用双引号将这些条目括起来
-- 这些属性值会在设定 `props_slay=false` 并完成一次重启，或正常卸载 VBMeta Disguiser 时被还原
-- 注意：属性值备份文件位于 `/data/adb/vbmetadisguiser/logs/slain_prop.prop`，请勿随意删除
-> 警告: 若你移除该文件，这些属性值将永久丢失，可能只有取消root并重新root才能还原这些属性值
-- 同步 Bloatware Slayer 的 aa-util.sh 中的变动
+- 修复了一个问题，该问题曾导致 Properties Slayer 疏忽了某些ROM启动完成时才添加属性值（props）的行为
+> 多谢 iabeefe 报告该[问题](https://github.com/Astoritin/VBMetaDisguiser/issues/2)
+- 为了让属性值移除生效，你需要重启你的设备一到两次
+> 这不是bug，是根据 resetprop 移除属性值的机制不得不这么做，只重启一次你可能会在 Native Test 中看到项目 `Property Modified (10)`
+- 重新添加该功能：干掉 install-recovery.sh，支持不修改系统分区的情况下移除文件 install-recovery.sh，默认禁用
+> 你可以在 `/data/adb/vbmetadisguiser/vbmeta.conf` 中设定 `install_recovery_slay=true` 以启用该功能
+- 重新添加该功能：干掉 addon.d，支持不修改系统分区的情况下移除目录 addon.d，默认禁用
+> 你可以在 `/data/adb/vbmetadisguiser/vbmeta.conf` 中设定 `addon_d_slay=true` 以启用该功能
+- 支持实时更新 VBMeta 分区属性值、Data分区属性值和移除指定属性值。
+- 移除大量无用代码以减小文件体积
