@@ -31,7 +31,6 @@ logowl "Install from $ROOT_SOL app"
 logowl "Essential checks"
 extract "$ZIPFILE" 'aa-util.sh' "$VERIFY_DIR"
 extract "$ZIPFILE" 'customize.sh' "$VERIFY_DIR"
-logowl_clean "$LOG_DIR" 20
 logowl "Extract module files"
 extract "$ZIPFILE" 'aa-util.sh' "$MODPATH"
 extract "$ZIPFILE" 'module.prop' "$MODPATH"
@@ -46,10 +45,12 @@ else
     logowl "vbmeta.conf already exists"
     check_props_slay=$(grep_config_var "props_slay" "$CONFIG_FILE")
     check_props_list=$(grep_config_var "props_list" "$CONFIG_FILE")
+    check_addon_d_slay=$(grep_config_var "addon_d_slay" "$CONFIG_FILE")
+    check_install_recovery_slay=$(grep_config_var "install_recovery_slay" "$CONFIG_FILE")
     if [ -z "$check_props_slay" ]; then
       logowl "Append new config to vbmeta.conf"
         echo -e "\n# Behaviors of Properties Slayer\n
-props_slay=false" >> "$CONFIG_FILE"
+props_slay=false\n" >> "$CONFIG_FILE"
     fi
     if [ -z "$check_props_list" ]; then
         echo -e 'props_list="persist.sys.spoof.gms
@@ -79,9 +80,15 @@ persist.sys.pixelprops.gapps
 persist.sys.pixelprops.google
 persist.sys.pixelprops.gphotos
 persist.sys.spoof.gms
-persist.sys.entryhooks_enabled"' >> "$CONFIG_FILE"
+persist.sys.entryhooks_enabled"\n' >> "$CONFIG_FILE"
     fi
-    [ -n "$check_props_slay" ] && [ -n "$check_props_list" ] && logowl "vbmeta.conf will NOT be overwritten"
+    if [ -z "$check_addon_d_slay" ]; then
+        echo -e "addon_d_slay=false\n" >> "$CONFIG_FILE"
+    fi
+    if [ -z "$check_install_recovery_slay" ]; then
+        echo -e "install_recovery_slay=false\n" >> "$CONFIG_FILE"
+    fi
+    [ -n "$check_props_slay" ] && [ -n "$check_props_list" ] && [ -n "$check_addon_d_slay" ] && [ -n "$check_install_recovery_slay" ] && logowl "vbmeta.conf will NOT be overwritten"
 fi
 rm -rf "$VERIFY_DIR"
 logowl "Set permission"
