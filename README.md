@@ -2,16 +2,21 @@ English | [简体中文](README_ZH-CN.md)
 
 # VBMeta Disguiser / VBMeta 伪装者
 
-A Magisk module to disguise the props of vbmeta, encryption status, encryption status and remove specific properties / 一个用于伪装 VBMeta 属性、加密状态、系统安全补丁日期和删除特定属性值的 Magisk 模块
+A Magisk module to disguise the properties of vbmeta, security patch date, encryption status and remove specific properties. / 一个用于伪装 VBMeta 属性、加密状态、系统安全补丁日期和删除特定属性值的 Magisk 模块
 
 ## Supported Root Solution
 
 [Magisk](https://github.com/topjohnwu/Magisk) | [KernelSU](https://github.com/tiann/KernelSU) | [APatch](https://github.com/bmax121/APatch)
 
-## Steps
+## Why does this module exist?
 
 One of the purpose of writing this module is bypass the specific items in specific detectors...lol.
 > Who knows? Maybe specific APPs might also use this point to check out whether the device has unlocked bootloader.
+
+**The core reason is I don't want to do something with flashing so many modules. Therefore, I wrote this module with so many weird features.**
+
+## Steps
+
 
 1. Please get the Boot Hash in **Key Attestation/Native Detector**.
 > Native detector and one fork of Key Attestation supports clicking on and copying the boot hash.
@@ -30,8 +35,15 @@ One of the purpose of writing this module is bypass the specific items in specif
 4. **`all=`、`system=`、`boot=`、`vendor=`**: all means all the partitions use the same value, as system means system partition security patch, so are boot and vendor.
 5. **`props_slay`**: remove ordered properties, it is set as `false` by default.
 6. **`props_list`**: a system properties list to remove system properties forever.
-> supports multi-line, one per line, please enclose the item in double quotation marks
-7. Since v1.2.6, you can configure security patch date in `/data/adb/vbmetadisguiser/vbmeta.conf` too.
+> supports multi-line, one per line, please enclose the items in double quotation marks. For example: `props_list="persist.a persist.b persist.c"`
+- To apply properties removal, you need to reboot your device once or twice.
+> This is NOT a bug. According to how resetprop works, you have to do it. You may see item `Property Modified (10)` in detector Native Test if only reboot once.
+- These properties will be back (restored) as setting `props_slay=false` and finishing reboot or uninstalling VBMeta Disguiser in normal way
+- NOTICE: properties backup file are located in `/data/adb/vbmetadisguiser/logs/slain_prop.prop`, please do NOT remove it casually
+> WARN: if you remove it, these properties will be lost forever, which means you can only unroot and root again to restore properties
+7. **`install_recovery_slay`**: Delete install-recovery.sh (Systemlessly), disabled by default
+8. **`addon_d_slay=true`**：Delete addon.d directory (Systemlessly)，disabled by default
+9. Since v1.2.6, you can configure security patch date in `/data/adb/vbmetadisguiser/vbmeta.conf` too.
 
 NOTICE: TrickyStore's configuration (`/data/adb/tricky_store/security_patch.txt`) has the highest priority, with VBMeta Disguiser's built-in configuration (`/data/adb/vbmetadisguiser/vbmeta.conf`) coming second
 
