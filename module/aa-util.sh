@@ -102,10 +102,10 @@ logowl() {
     [ -z "$LOG_MSG" ] && return 1
 
     case "$LOG_MSG_LEVEL" in
-        "TIPS") LOG_MSG_PREFIX="> " ;;
         "WARN") LOG_MSG_PREFIX="- Warn: " ;;
         "ERROR") LOG_MSG_PREFIX="! ERROR: " ;;
         "FATAL") LOG_MSG_PREFIX="× FATAL: " ;;
+        ">") LOG_MSG_PREFIX="> " ;;
         "*" ) LOG_MSG_PREFIX="* " ;; 
         " ") LOG_MSG_PREFIX="  " ;;
         "-") LOG_MSG_PREFIX="" ;;
@@ -159,12 +159,17 @@ grep_config_var() {
 }
 
 get_config_var() {
-    key="$1"
-    config_file="$2"
+    key=$1
+    config_file=$2
 
-    [ -z "$key" ] || [ -z "$config_file" ] && return 1
-    [ ! -f "$config_file" ] && return 2
-
+    if [ -z "$key" ] || [ -z "$config_file" ]; then
+        logowl "Key or config file path is NOT ordered" "WARN"
+        return 1
+    elif [ ! -f "$config_file" ]; then
+        logowl "$config_file is NOT a file" "WARN"
+        return 2
+    fi
+    
     value=$(awk -v key="$key" '
         BEGIN {
             key_regex = "^" key "="
@@ -216,107 +221,24 @@ get_config_var() {
 
     awk_exit_state=$?
     case $awk_exit_state in
-        1)  return 5
+        1)  logowl "Error in fetching value for $key (code: 1)" "WARN"
+            return 5
             ;;
         0)  ;;
-        *)  return 6
+        *)  logowl "Unexpected error (code: $awk_exit_state)" "WARN"
+            return 6
             ;;
     esac
 
-    value=$(printf "%s" "$value" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    value=$(echo "$value" | dos2unix | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/'\''/'\\\\'\'''\''/g' | sed 's/[$;&|<>`"()]/\\&/g')
 
-    if check_value_safety "$key" "$value"; then
+    if [ -n "$value" ]; then
+        logowl "Set $key=$value" ">"
         echo "$value"
         return 0
     else
-        return $?
-    fi
-}
-
-check_value_safety() {
-    key="$1"
-    value="$2"
-
-    check_param_safety "$key"
-    result_check_key=$?
-
-    if [ "$result_check_key" = 0 ]; then
-        if [ "$value" = true ] || [ "$value" = false ]; then
-            logowl "Verified $key=$value (boolean)"
-            return 0
-        fi
-    else
-        logowl "Failed to verify key ($result_check_key)"
+        logowl "Key $key does NOT exist in file $config_file" "WARN"
         return 1
-    fi
-
-    check_param_safety "$value"
-    result_check_value=$?
-
-    if [ "$result_check_key" = 0 ] && [ "$result_check_value" = 0 ]; then
-        if echo "$value" | grep -q '^'; then
-            value=$(echo "$value" | sed ':loop;N;N;y/\n/ /;P;D')
-        fi
-        logowl "Verified $key=$value"
-        return 0
-    else
-        logowl "Failed to verify value ($result_check_value)"
-        return 1
-    fi
-
-}
-
-check_param_safety() {
-    param=$1
-
-    [ -z "$param" ] && return 1
-
-    param=$(printf "%s" "$param" | sed 's/'\''/'\\\\'\'''\''/g' | sed 's/[$;&|<>`"()]/\\&/g')
-    first_char=$(printf '%s' "$param" | cut -c1)
-
-    [ "$first_char" = "#" ] && return 2
-    
-    param=$(echo "$param" | cut -d'#' -f1 | xargs)
-
-    regex='^[a-zA-Z0-9/_\. @-]*$'
-    dangerous_chars='[`$();|<>]'
-
-    if echo "$param" | grep -Eq "$dangerous_chars"; then
-        return 3
-    fi
-
-    if ! echo "$param" | grep -Eq "$regex"; then
-        return 4
-    fi
-
-    return 0
-}
-
-verify_var() {
-    config_var_name="$1"
-    config_var_value="$2"
-    validation_pattern="$3"
-    default_value="${4:-}"
-
-    [ -z "$config_var_name" ] || [ -z "$config_var_value" ] || [ -z "$validation_pattern" ] && return 1    
-    
-    script_var_name=$(echo "$config_var_name" | tr '[:lower:]' '[:upper:]')
-
-    if echo "$config_var_value" | grep -qE "$validation_pattern"; then
-        export "$script_var_name"="$config_var_value"
-        if echo "$config_var_value" | grep -q '^'; then
-            config_var_value=$(echo "$config_var_value" | sed ':loop;N;N;y/\n/ /;P;D')
-        fi
-        logowl "Set $script_var_name=$config_var_value" "TIPS"
-        return 0
-    else
-        if [ -n "$default_value" ]; then
-            if eval "[ -z \"\${$script_var_name+x}\" ]"; then
-                logowl "Set $script_var_name=$default_value (default)" "TIPS"
-                export "$script_var_name"="$default_value"
-            fi
-        fi
-        return 2
     fi
 }
 
@@ -325,11 +247,13 @@ update_config_var() {
     key_value="$2"
     file_path="$3"
 
-    [ -z "$key_name" ] || [ -z "$key_value" ] || [ -z "$file_path" ] && return 1
-    [ ! -f "$file_path" ] && return 2
+    if [ -z "$key_name" ] || [ -z "$key_value" ] || [ -z "$file_path" ]; then
+        return 1
+    elif [ ! -f "$file_path" ]; then
+        return 2
+    fi
 
     sed -i "/^${key_name}=/c\\${key_name}=${key_value}" "$file_path"
-
     result_update_value=$?
     return "$result_update_value"
 
@@ -481,7 +405,7 @@ clean_duplicate_items() {
 
 }
 
-fetch_prop() {
+see_prop() {
     prop_name=$1
     prop_current_value=$(getprop "$prop_name")
 
@@ -496,41 +420,38 @@ fetch_prop() {
 }
 
 check_and_resetprop() {
+
     prop_name=$1
     prop_expect_value=$2
     prop_current_value=$(resetprop "$prop_name")
 
     [ -z "$prop_current_value" ] && return 1
 
-    [ "$prop_current_value" = "$prop_expect_value" ] || resetprop "$prop_name" "$prop_expect_value"
-    result_check_and_resetprop=$?
-    logowl "Execute: resetprop $prop_name $prop_expect_value (code: $result_check_and_resetprop)"
-
-}
-
-check_and_slayprop() {
-    prop_name=$1
-    prop_current_value=$(resetprop "$prop_name")
-
-    [ -z "$prop_current_value" ] && return 1
+    [ "$prop_current_value" = "$prop_expect_value" ] && return 0
     
-    resetprop -p --delete $prop_name
-    result_check_and_slayprop=$?
-    logowl "Execute: resetprop -p --delete $prop_name (code: $result_check_and_slayprop)"
+    if [ "$prop_current_value" != "$prop_expect_value" ]; then
+        resetprop "$prop_name" "$prop_expect_value"
+        result_check_and_resetprop=$?
+        logowl "resetprop $prop_name $prop_expect_value ($result_check_and_resetprop)"
+    fi
+
 }
 
 match_and_resetprop() {
+
     prop_name="$1"
     prop_contains_keyword="$2"
     prop_expect_value="$3"
     prop_current_value=$(resetprop "$prop_name")
 
-    [ -z "$prop_current_value" ] || [ -z "$prop_contains_keyword" ] || [ -z "$prop_expect_value" ] && return 1
+    [ -z "$prop_current_value" ] && return 1
+    [ -z "$prop_contains_keyword" ] && return 1
+    [ -z "$prop_expect_value" ] && return 1
     
     if echo "$prop_current_value" | grep -q "$prop_contains_keyword"; then
         resetprop "$prop_name" "$prop_expect_value"
         result_check_and_resetprop=$?
-        logowl "Execute: resetprop $prop_name $prop_expect_value (code: $result_check_and_resetprop)"
+        logowl "resetprop $prop_name $prop_expect_value ($result_check_and_resetprop)"
     fi
 
 }
@@ -571,29 +492,5 @@ install_package() {
 
     rm -f "$package_tmp"
     return "$result_install_package"    
-
-}
-
-debug_props_info() {
-
-    print_line "51"
-    logowl "Security patch date properties"
-    print_line "51"
-    fetch_prop "ro.build.version.security_patch"
-    fetch_prop "ro.system.build.security_patch"
-    fetch_prop "ro.vendor.build.security_patch"
-    print_line "51"
-    logowl "VBMeta partition properties"
-    print_line "51"
-    fetch_prop "ro.boot.vbmeta.device_state"
-    fetch_prop "ro.boot.vbmeta.avb_version"
-    fetch_prop "ro.boot.vbmeta.hash_alg"
-    fetch_prop "ro.boot.vbmeta.size"
-    fetch_prop "ro.boot.vbmeta.digest"
-    print_line "51"
-    logowl "Data partition properties"
-    print_line "51"
-    fetch_prop "ro.crypto.state"
-    print_line "51"
 
 }
