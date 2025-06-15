@@ -3,16 +3,19 @@
 # VBMeta 伪装者 / VBMeta Disguiser
 
 一个用于伪装 VBMeta 属性、加密状态、系统安全补丁日期和删除特定属性值的 Magisk 模块
-/ A Magisk module to disguise the props of vbmeta, encryption status, encryption status and remove specific properties
+/ A Magisk module to disguise the properties of vbmeta, security patch date, encryption status and remove specific properties.
 
 ## 支持的 Root 方案
 
 [Magisk](https://github.com/topjohnwu/Magisk) | [KernelSU](https://github.com/tiann/KernelSU) | [APatch](https://github.com/bmax121/APatch)
 
-## 步骤
+## 为什么存在这个模块？
 
 该模块的目的之一只是为了过某两个检测器的某一项……哈哈。
 > 不过也说不准会有特定的软件也会根据这一点判断是不是已经解锁的设备，谁知道呢。
+**主要原因是因为有些事情不想写多个模块去做，索性写了这么个有着各种奇怪功能的模块。**
+
+## 步骤
 
 1. 请在 密钥验证 / Native Detector 中获取 Boot Hash
 > Native Detector 和某个fork版本的密钥验证APP是支持单击复制 boot hash的。
@@ -31,7 +34,15 @@
 4. **`all=`、`system=`、`boot=`、`vendor=`**: all 表示所有分区都使用同一个值，system表示系统分区的补丁日期，boot表示boot分区的补丁日期，vendor表示供应商分区补丁日期。
 5. **`props_slay`**: 移除指定的属性值，默认值为`false`(禁用)。
 6. **`props_list`**: 一个用于永久移除系统属性值的系统属性清单。
-7. 从v1.2.6开始，你也可以在 `/data/adb/vbmetadisguiser/vbmeta.conf` 中设定想要伪装的安全补丁日期。
+> 支持多行，一行一个，请将这些项目用双引号括起来。例如：`props_list="persist.a persist.b persist.c"`
+- 为了让属性值移除生效，你需要重启你的设备一到两次
+> 这不是bug，是根据 resetprop 移除属性值的机制不得不这么做，只重启一次你可能会在 Native Test 中看到项目 `Property Modified (10)`
+- 这些属性值会在设定 `props_slay=false` 并完成一次重启，或正常卸载 VBMeta Disguiser 时被还原
+- 注意：属性值备份文件位于 `/data/adb/vbmetadisguiser/logs/slain_prop.prop`，请勿随意删除
+> 警告: 若你移除该文件，这些属性值将永久丢失，可能只有取消root并重新root才能还原这些属性值
+7. **`install_recovery_slay`**：移除 install-recovery.sh 文件 (不修改系统)，默认禁用
+8. **`addon_d_slay=true`**：移除 addon.d 文件夹 (不修改系统)，默认禁用
+9. 从v1.2.6开始，你也可以在 `/data/adb/vbmetadisguiser/vbmeta.conf` 中设定想要伪装的安全补丁日期。
 - 注意：[TrickyStore](https://github.com/5ec1cff/TrickyStore)的配置 (`/data/adb/tricky_store/security_patch.txt`) 优先级最高，其次才是VBMeta Disguiser的 (`/data/adb/vbmetadisguiser/vbmeta.conf`) 内置的配置
 
 ## 日志
