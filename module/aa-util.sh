@@ -221,11 +221,11 @@ get_config_var() {
 
     awk_exit_state=$?
     case $awk_exit_state in
-        1)  logowl "Error in fetching value for $key (code: 1)" "WARN"
+        1)  logowl "Error in fetching value for $key (1)" "WARN"
             return 5
             ;;
         0)  ;;
-        *)  logowl "Unexpected error (code: $awk_exit_state)" "WARN"
+        *)  logowl "Unexpected error ($awk_exit_state)" "WARN"
             return 6
             ;;
     esac
