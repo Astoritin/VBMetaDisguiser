@@ -39,7 +39,7 @@ One of the purpose of writing this module is bypass the specific items in specif
 - To apply properties removal, you need to reboot your device once or twice.
 > This is NOT a bug. According to how resetprop works, you have to do it. You may see item `Property Modified (10)` in detector Native Test if only reboot once.
 - These properties will be back (restored) as setting `props_slay=false` and finishing reboot or uninstalling VBMeta Disguiser in normal way
-- NOTICE: properties backup file are located in `/data/adb/vbmetadisguiser/~logs/~slain_prop.prop`, please do NOT remove it casually
+- NOTICE: properties backup file are located in `/data/adb/vbmetadisguiser/slain_prop.prop`, please do NOT remove it casually
 > WARN: if you remove it, these properties will be lost forever, which means you can only unroot and root again to restore properties
 7. **`install_recovery_slay`**: Delete install-recovery.sh (Systemlessly), disabled by default
 8. **`addon_d_slay=true`**：Delete addon.d directory (Systemlessly)，disabled by default
