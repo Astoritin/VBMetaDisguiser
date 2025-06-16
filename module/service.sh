@@ -11,7 +11,7 @@ LOG_FILE="$LOG_DIR/vd_core_vm_$(date +"%Y%m%dT%H%M%S").log"
 
 MOD_INTRO="Disguise the properties of vbmeta, security patch date, encryption status and remove specific properties."
 
-SLAIN_PROPS="$LOG_DIR/slain_props.prop"
+SLAIN_PROPS="$CONFIG_DIR/slain_props.prop"
 TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
 
 update_realtime=true
