@@ -39,7 +39,7 @@
 - 为了让属性值移除生效，你需要重启你的设备一到两次
 > 这不是bug，是根据 resetprop 移除属性值的机制不得不这么做，只重启一次你可能会在 Native Test 中看到项目 `Property Modified (10)`
 - 这些属性值会在设定 `props_slay=false` 并完成一次重启，或正常卸载 VBMeta Disguiser 时被还原
-- 注意：属性值备份文件位于 `/data/adb/vbmetadisguiser/logs/slain_prop.prop`，请勿随意删除
+- 注意：属性值备份文件位于 `/data/adb/vbmetadisguiser/~logs/~slain_prop.prop`，请勿随意删除
 > 警告: 若你移除该文件，这些属性值将永久丢失，可能只有取消root并重新root才能还原这些属性值
 7. **`install_recovery_slay`**：移除 install-recovery.sh 文件 (不修改系统)，默认禁用
 8. **`addon_d_slay=true`**：移除 addon.d 文件夹 (不修改系统)，默认禁用
