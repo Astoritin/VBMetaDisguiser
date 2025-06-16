@@ -91,6 +91,7 @@ persist.sys.entryhooks_enabled"\n' >> "$CONFIG_FILE"
     [ -n "$check_props_slay" ] && [ -n "$check_props_list" ] && [ -n "$check_addon_d_slay" ] && [ -n "$check_install_recovery_slay" ] && logowl "vbmeta.conf will NOT be overwritten"
 fi
 rm -rf "$VERIFY_DIR"
+mv "$LOG_DIR/slain_props.prop" "$CONFIG_DIR/slain_props.prop"
 logowl "Set permission"
 set_permission_recursive "$MODPATH" 0 0 0755 0644
 logowl "Welcome to use $MOD_NAME!"
