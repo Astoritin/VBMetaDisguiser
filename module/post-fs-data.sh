@@ -181,7 +181,7 @@ mirror_make_node() {
         logowl "Node $mirror_node_path does NOT exist"
         mknod "$mirror_node_path" c 0 0
         result_make_node="$?"
-        logowl "mknod $mirror_node_path c 0 0"
+        logowl "mknod $mirror_node_path c 0 0 ($result_make_node)"
         if [ $result_make_node -eq 0 ]; then
             return 0
         else
@@ -217,7 +217,7 @@ addon_d_slayer() {
     addon_d_path="/system/addon.d"
 
     addon_d_slay=$(get_config_var "addon_d_slay" "$CONFIG_FILE")
-    [ -n "$addon_d_slay" ] && return 1
+    [ -z "$addon_d_slay" ] && return 1
 
     if [ "$addon_d_slay" = false ]; then
         logowl "Flag addon_d_slay=false"
@@ -282,6 +282,8 @@ check_make_node_support
 addon_d_slayer
 install_recovery_script_slayer
 print_line
+set_permission_recursive "$MODDIR" 0 0 0755 0644
+set_permission_recursive "$CONFIG_DIR" 0 0 0755 0644
 logowl "Properties after disguise"
 check_props
 print_line
