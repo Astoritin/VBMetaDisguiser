@@ -277,7 +277,7 @@ show_system_info() {
 
     logowl "Device: $(getprop ro.product.brand) $(getprop ro.product.model) ($(getprop ro.product.device))"
     logowl "OS: Android $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk)), $(getprop ro.product.cpu.abi | cut -d '-' -f1)"
-
+    logowl "Kernel: $(uname -r)"
 }
 
 module_intro() {
@@ -293,7 +293,6 @@ module_intro() {
     logowl "By $MOD_AUTHOR"
     logowl "Version: $MOD_VER"
     logowl "Root: $ROOT_SOL_DETAIL"
-    logowl "Timestamp: $(date +"%Y-%m-%d %H:%M:%S")"
     print_line
 
 }
@@ -341,11 +340,10 @@ extract() {
     fi
 
     unzip $opts "$zip" "$file" -d "$dir" >&2
-    [ -f "$file_path" ] || abort_verify "$file does NOT exist!"
-    logowl "Extract $file -> $file_path" >&1
+    [ -f "$file_path" ] || abort_verify "$file does NOT exist"
 
     unzip $opts "$zip" "$file.sha256" -d "$VERIFY_DIR" >&2
-    [ -f "$hash_path" ] || abort_verify "$file.sha256 does NOT exist!"
+    [ -f "$hash_path" ] || abort_verify "$file.sha256 does NOT exist"
 
     expected_hash="$(cat "$hash_path")"
     calculated_hash="$(sha256sum "$file_path" | cut -d ' ' -f1)"
