@@ -39,16 +39,14 @@ extract "$ZIPFILE" 'post-fs-data.sh' "$MODPATH"
 extract "$ZIPFILE" 'service.sh' "$MODPATH"
 extract "$ZIPFILE" 'uninstall.sh' "$MODPATH"
 if [ ! -f "$CONFIG_FILE" ]; then
-    logowl "vbmeta.conf does NOT exist"
+    logowl "Extract config file"
     extract "$ZIPFILE" 'vbmeta.conf' "$CONFIG_DIR"    
 else
-    logowl "vbmeta.conf already exists"
     check_props_slay=$(grep_config_var "props_slay" "$CONFIG_FILE")
     check_props_list=$(grep_config_var "props_list" "$CONFIG_FILE")
-    check_addon_d_slay=$(grep_config_var "addon_d_slay" "$CONFIG_FILE")
     check_install_recovery_slay=$(grep_config_var "install_recovery_slay" "$CONFIG_FILE")
     if [ -z "$check_props_slay" ]; then
-      logowl "Append new config to vbmeta.conf"
+        logowl "Append new config to vbmeta.conf"
         echo -e "\n# Behaviors of Properties Slayer\n
 props_slay=false\n" >> "$CONFIG_FILE"
     fi
@@ -82,13 +80,9 @@ persist.sys.pixelprops.gphotos
 persist.sys.spoof.gms
 persist.sys.entryhooks_enabled"\n' >> "$CONFIG_FILE"
     fi
-    if [ -z "$check_addon_d_slay" ]; then
-        echo -e "addon_d_slay=false\n" >> "$CONFIG_FILE"
-    fi
     if [ -z "$check_install_recovery_slay" ]; then
         echo -e "install_recovery_slay=false\n" >> "$CONFIG_FILE"
     fi
-    [ -n "$check_props_slay" ] && [ -n "$check_props_list" ] && [ -n "$check_addon_d_slay" ] && [ -n "$check_install_recovery_slay" ] && logowl "vbmeta.conf will NOT be overwritten"
 fi
 rm -rf "$VERIFY_DIR"
 mv "$LOG_DIR/slain_props.prop" "$CONFIG_DIR/slain_props.prop"
