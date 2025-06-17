@@ -49,7 +49,7 @@ for fm in $ROOT_FILE_MANAGERS; do
 
 done
 
-logowl "No available Root Explorer detected!" "WARN"
+logowl "No any available Root Explorers found!" "WARN"
 logowl "Please open config dir manually if needed" "WARN"
 print_line
 logowl "action.sh case closed!"
