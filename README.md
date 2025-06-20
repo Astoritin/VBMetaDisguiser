@@ -42,7 +42,8 @@ One of the purpose of writing this module is bypass the specific items in specif
 - NOTICE: properties backup file are located in `/data/adb/vbmetadisguiser/slain_prop.prop`, please do NOT remove it casually
 > WARN: if you remove it, these properties will be lost forever, which means you can only unroot and root again to restore properties
 7. **`install_recovery_slay`**: Delete install-recovery.sh (Systemlessly), disabled by default
-8. **`addon_d_slay=true`**：Delete addon.d directory (Systemlessly)，disabled by default
+8. ~**`addon_d_slay=true`**：Delete addon.d directory (Systemlessly)，disabled by default~
+> This feature has been removed since 1.3.6 because it can't work on Magic Mount based module system.
 9. Since v1.2.6, you can configure security patch date in `/data/adb/vbmetadisguiser/vbmeta.conf` too.
 
 NOTICE: TrickyStore's configuration (`/data/adb/tricky_store/security_patch.txt`) has the highest priority, with VBMeta Disguiser's built-in configuration (`/data/adb/vbmetadisguiser/vbmeta.conf`) coming second
