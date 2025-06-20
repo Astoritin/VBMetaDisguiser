@@ -42,9 +42,10 @@
 - 注意：属性值备份文件位于 `/data/adb/vbmetadisguiser/slain_prop.prop`，请勿随意删除
 > 警告: 若你移除该文件，这些属性值将永久丢失，可能只有取消root并重新root才能还原这些属性值
 7. **`install_recovery_slay`**：移除 install-recovery.sh 文件 (不修改系统)，默认禁用
-8. **`addon_d_slay=true`**：移除 addon.d 文件夹 (不修改系统)，默认禁用
+8. ~**`addon_d_slay=true`**：移除 addon.d 文件夹 (不修改系统)，默认禁用~
+> 因为该功能无法在基于 Magic Mount 的系统起作用，自 1.3.6 起，该功能已被移除
 9. 从v1.2.6开始，你也可以在 `/data/adb/vbmetadisguiser/vbmeta.conf` 中设定想要伪装的安全补丁日期。
-- 注意：[TrickyStore](https://github.com/5ec1cff/TrickyStore)的配置 (`/data/adb/tricky_store/security_patch.txt`) 优先级最高，其次才是VBMeta Disguiser的 (`/data/adb/vbmetadisguiser/vbmeta.conf`) 内置的配置
+- 注意：[TrickyStore](https://github.com/5ec1cff/TrickyStore)的配置文件 (`/data/adb/tricky_store/security_patch.txt`) 优先级最高，其次才是VBMeta Disguiser的配置文件 (`/data/adb/vbmetadisguiser/vbmeta.conf`)。并且，为了防止不必要的交互，一旦检测到 TrickyStore 的配置文件 (`/data/adb/tricky_store/security_patch.txt`) 存在，VBMeta Disguiser 的配置文件 (`/data/adb/vbmetadisguiser/vbmeta.conf`) 会被忽略。
 
 ## 日志
 日志被保存在 `/data/adb/vbmetadisguiser/logs`，你可以查看它并在反馈遇到的问题时提交该日志。
