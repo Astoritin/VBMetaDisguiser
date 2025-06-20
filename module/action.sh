@@ -1,11 +1,8 @@
 #!/system/bin/sh
 MODDIR=${0%/*}
 
-. "$MODDIR/aa-util.sh"
-
 CONFIG_DIR="/data/adb/vbmetadisguiser"
-LOG_DIR="$CONFIG_DIR/logs"
-LOG_FILE="$LOG_DIR/vd_action_$(date +"%Y-%m-%d_%H-%M-%S").log"
+SEPARATE_LINE="----------------------------------------"
 
 ROOT_FILE_MANAGERS="
 com.speedsoftware.rootexplorer/com.speedsoftware.rootexplorer.RootExplorer
@@ -22,34 +19,42 @@ nextapp.fx/nextapp.fx.ui.ExplorerActivity
 me.zhanghai.android.files/me.zhanghai.android.files.filelist.FileListActivity
 "
 
-init_logowl "$LOG_DIR"
-module_intro
-logowl "Start action.sh"
+echo "$SEPARATE_LINE"
+echo "- VBMeta Disguiser"
+echo "- By Astoritin Ambrosius"
+echo "$SEPARATE_LINE"
+echo "- Opening config dir"
+echo "$SEPARATE_LINE"
+echo "- If nothing happened after case closed"
+echo "- that means not any available root"
+echo "- file explorer is found on your device"
+echo "- Anyway, you can open config dir"
+echo "- manually on your way"
+echo "$SEPARATE_LINE"
+sleep 1
 
 IFS=$'\n'
 
 for fm in $ROOT_FILE_MANAGERS; do
 
     PKG=${fm%/*}
-    ACT=${fm#*/}
 
     if pm path "$PKG" >/dev/null 2>&1; then
-        logowl "Attempt to use $PKG to open config dir"
+        echo "> Launching $PKG"
         am start -n "$fm" "file://$CONFIG_DIR"
         result_action="$?"
-        logowl "am start -n $fm file://$CONFIG_DIR ($result_action)"
+        echo "- am start -n $fm file://$CONFIG_DIR ($result_action)"
         if [ $result_action -eq 0 ]; then
-            print_line
-            logowl "action.sh case closed!"
-            exit 0
+            echo "$SEPARATE_LINE"
+            echo "- Case closed!"
+            sleep 1
+            return 0
         fi
     else
-          logowl "$PKG is NOT installed yet!" "ERROR"
+        echo "- $PKG is NOT installed"
     fi
 
 done
 
-logowl "No any available Root Explorers found!" "WARN"
-logowl "Please open config dir manually if needed" "WARN"
-print_line
-logowl "action.sh case closed!"
+echo "$SEPARATE_LINE"
+echo "- Case closed!"
