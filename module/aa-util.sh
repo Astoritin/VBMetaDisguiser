@@ -102,9 +102,9 @@ logowl() {
     [ -z "$LOG_MSG" ] && return 1
 
     case "$LOG_MSG_LEVEL" in
-        "WARN") LOG_MSG_PREFIX="- Warn: " ;;
-        "ERROR") LOG_MSG_PREFIX="! ERROR: " ;;
-        "FATAL") LOG_MSG_PREFIX="× FATAL: " ;;
+        "W") LOG_MSG_PREFIX="? Warn: " ;;
+        "E") LOG_MSG_PREFIX="! ERROR: " ;;
+        "F") LOG_MSG_PREFIX="× FATAL: " ;;
         ">") LOG_MSG_PREFIX="> " ;;
         "*" ) LOG_MSG_PREFIX="* " ;; 
         " ") LOG_MSG_PREFIX="  " ;;
@@ -163,10 +163,10 @@ get_config_var() {
     config_file=$2
 
     if [ -z "$key" ] || [ -z "$config_file" ]; then
-        logowl "Key or config file path is NOT ordered" "WARN"
+        logowl "Key or config file path is NOT ordered" "W"
         return 1
     elif [ ! -f "$config_file" ]; then
-        logowl "$config_file is NOT a file" "WARN"
+        logowl "$config_file is NOT a file" "W"
         return 2
     fi
     
@@ -221,11 +221,11 @@ get_config_var() {
 
     awk_exit_state=$?
     case $awk_exit_state in
-        1)  logowl "Error in fetching value for $key (1)" "WARN"
+        1)  logowl "Failed to fetch value for $key (1)" "W"
             return 5
             ;;
         0)  ;;
-        *)  logowl "Unexpected error ($awk_exit_state)" "WARN"
+        *)  logowl "Unexpected error ($awk_exit_state)" "W"
             return 6
             ;;
     esac
@@ -237,7 +237,7 @@ get_config_var() {
         echo "$value"
         return 0
     else
-        logowl "Key $key does NOT exist in file $config_file" "WARN"
+        logowl "Key $key does NOT exist in file $config_file" "W"
         return 1
     fi
 }
@@ -278,6 +278,7 @@ show_system_info() {
     logowl "Device: $(getprop ro.product.brand) $(getprop ro.product.model) ($(getprop ro.product.device))"
     logowl "OS: Android $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk)), $(getprop ro.product.cpu.abi | cut -d '-' -f1)"
     logowl "Kernel: $(uname -r)"
+
 }
 
 module_intro() {
@@ -297,25 +298,10 @@ module_intro() {
 
 }
 
-file_compare() {
-    file_a="$1"
-    file_b="$2"
-    
-    [ -z "$file_a" ] || [ -z "$file_b" ] && return 2
-    [ ! -f "$file_a" ] || [ ! -f "$file_b" ] && return 3
-    
-    hash_file_a=$(sha256sum "$file_a" | awk '{print $1}')
-    hash_file_b=$(sha256sum "$file_b" | awk '{print $1}')
-    
-    [ "$hash_file_a" = "$hash_file_b" ] && return 0
-    [ "$hash_file_a" != "$hash_file_b" ] && return 1
-
-}
-
 abort_verify() {
 
     [ -n "$VERIFY_DIR" ] && [ -d "$VERIFY_DIR" ] && [ "$VERIFY_DIR" != "/" ] && rm -rf "$VERIFY_DIR"
-    logowl "$1" "ERROR"
+    logowl "$1" "E"
     abort "This zip may be corrupted or has been maliciously modified!"
 
 }
@@ -376,18 +362,6 @@ set_permission_recursive() {
         set_permission $file $2 $3 $5 $6
     done
 
-}
-
-check_duplicate_items() {
-
-    itemd=$1
-    filed=$2
-
-    if grep -q "^$itemd$" "$filed"; then
-        return 1
-    else
-        return 0
-    fi
 }
 
 clean_duplicate_items() {
@@ -451,44 +425,5 @@ match_and_resetprop() {
         result_check_and_resetprop=$?
         logowl "resetprop $prop_name $prop_expect_value ($result_check_and_resetprop)"
     fi
-
-}
-
-fetch_package_path_from_pm() {
-    package_name=$1
-    output_pm=$(pm path "$package_name")
-
-    [ -z "$output_pm" ] && return 1
-
-    package_path=$(echo "$output_pm" | cut -d':' -f2- | sed 's/^://' )
-
-    echo "$package_path"    
-}
-
-uninstall_package() {
-
-    package_name="$1"
-
-    pm uninstall "$package_name"
-    result_uninstall_package=$?
-
-    return "$result_uninstall_package"
-
-}
-
-install_package() {
-
-    package_path="$1"
-
-    cp "$package_path" "$TMP_DIR"
-
-    package_basename=$(basename "$package_path")
-    package_tmp="$TMP_DIR/$package_basename"
-
-    pm install -i "com.android.vending" "$package_tmp"
-    result_install_package=$?
-
-    rm -f "$package_tmp"
-    return "$result_install_package"    
 
 }
