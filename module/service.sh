@@ -7,7 +7,7 @@ CONFIG_DIR="/data/adb/vbmetadisguiser"
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 
 LOG_DIR="$CONFIG_DIR/logs"
-LOG_FILE="$LOG_DIR/vd_core_vm_$(date +"%Y%m%dT%H%M%S").log"
+LOG_FILE="$LOG_DIR/vd_core_vbmeta_$(date +"%Y%m%dT%H%M%S").log"
 
 MOD_INTRO="Disguise the properties of vbmeta, security patch date, encryption status and remove specific properties."
 
@@ -175,7 +175,7 @@ module_status_update() {
         first_char=$(printf '%s' "$line" | cut -c1)
         [ -z "$line" ] && continue
         [ "$first_char" = "#" ] && continue
-        logowl "slain prop: $line"
+        logowl "slain prop $line"
         slain_props_count=$((slain_props_count + 1))
     done < "$SLAIN_PROPS"
 
@@ -211,23 +211,21 @@ logowl_init "$LOG_DIR"
 module_intro >> "$LOG_FILE"
 show_system_info
 print_line
-logowl "Start service.sh"
 config_loader
 soft_bootloader_spoof
 vbmeta_disguiser
 encryption_disguiser
-logowl "Wait for boot complete"
 boot_count=0
 while [ "$(getprop sys.boot_completed)" != "1" ]; do
     boot_count=$((boot_count + 1))
     sleep 1
 done
-logowl "Boot completed after ${boot_count}s!"
-print_line
 props_slayer
 module_status_update
+set_permission_recursive "$MODDIR" 0 0 0755 0644
+set_permission_recursive "$CONFIG_DIR" 0 0 0755 0644
 print_line
-logowl "service.sh case closed!"
+logowl "Case closed!"
 logowl_clean "$LOG_DIR" 20
 
 {
@@ -237,7 +235,7 @@ logowl_clean "$LOG_DIR" 20
 
         if [ "$update_realtime" = false ] || [ -f "$MODDIR/update" ]; then
             [ "$update_realtime" = false ] && logowl "Flag update_realtime=false"
-            [ -f "$MODDIR/update" ] && logowl "Flag update detected"
+            [ -f "$MODDIR/update" ] && logowl "Find flag update"
             logowl "Exit background task"
             exit 0
         fi
@@ -248,7 +246,6 @@ logowl_clean "$LOG_DIR" 20
         logowl_init "$LOG_DIR"
         module_intro > "$LOG_FILE"
         show_system_info
-        logowl "Timestamp: $(date +"%Y%m%dT%H%M%S")"
         logowl "Current turn: ${MOD_TURN_COUNT}, update period: $update_period"
         print_line
         config_loader
