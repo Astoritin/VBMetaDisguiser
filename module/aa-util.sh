@@ -163,7 +163,7 @@ get_config_var() {
     config_file=$2
 
     if [ -z "$key" ] || [ -z "$config_file" ]; then
-        logowl "Key or config file path is NOT ordered" "W"
+        logowl "Key or config file path is NOT defined" "W"
         return 1
     elif [ ! -f "$config_file" ]; then
         logowl "$config_file is NOT a file" "W"

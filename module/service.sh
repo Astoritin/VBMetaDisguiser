@@ -9,7 +9,7 @@ CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 LOG_DIR="$CONFIG_DIR/logs"
 LOG_FILE="$LOG_DIR/vd_core_vbmeta_$(date +"%Y%m%dT%H%M%S").log"
 
-MOD_INTRO="Disguise the properties of vbmeta, security patch date, encryption status and remove specific properties."
+MOD_INTRO="Disguise vbmeta, security patch date, encryption state props and remove specified props."
 
 SLAIN_PROPS="$CONFIG_DIR/slain_props.prop"
 TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
@@ -82,7 +82,7 @@ encryption_disguiser(){
 
     logowl "Disguise Data partition props"
 
-    [ -n "$crypto_state" ] && resetprop -n "ro.crypto.state" "$crypto_state"
+    [ -n "$crypto_state" ] && check_and_resetprop "ro.crypto.state" "$crypto_state"
 
 }
 
@@ -183,19 +183,15 @@ module_status_update() {
 
     if [ "$update_count" -gt 0 ]; then
         if [ -n "$desc_slain_props" ]; then
-            DESCRIPTION="[✅Done. $desc_vbmeta, $desc_ts_sp, $desc_crypto, $desc_slain_props] $MOD_INTRO"
+            DESCRIPTION="[✅Cleared. $desc_vbmeta, $desc_avb, $desc_slain_props, $desc_ts_sp, $desc_crypto] $MOD_INTRO"
         else
             DESCRIPTION="[✅Done. $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] $MOD_INTRO"
         fi
     else
-        DESCRIPTION="[❌No effect. Maybe something went wrong?] $MOD_INTRO"
+        DESCRIPTION="[❌No effect. Something went wrong!] $MOD_INTRO"
     fi
     update_config_var "description" "$DESCRIPTION" "$MODULE_PROP"
 
-    logowl "Security patch date properties" ">"
-    see_prop "ro.build.version.security_patch"
-    see_prop "ro.system.build.security_patch"
-    see_prop "ro.vendor.build.security_patch"
     logowl "VBMeta partition properties" ">"
     see_prop "ro.boot.vbmeta.device_state"
     see_prop "ro.boot.vbmeta.avb_version"

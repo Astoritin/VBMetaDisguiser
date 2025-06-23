@@ -13,15 +13,6 @@ TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
 
 install_recovery_slay=false
 
-check_props() {
-
-    logowl "Security patch date properties" ">"
-    see_prop "ro.build.version.security_patch"
-    see_prop "ro.system.build.security_patch"
-    see_prop "ro.vendor.build.security_patch"
-
-}
-
 date_format_convert() {
 
     key_name="$1"
@@ -159,7 +150,7 @@ mirror_make_node() {
     node_path=$1
 
     if [ -z "$node_path" ]; then
-        logowl "Node path is NOT ordered (5)" "E"
+        logowl "Node path is NOT defined (5)" "E"
         return 5
     elif [ ! -e "$node_path" ]; then
         logowl "$node_path does NOT exist (6)" "E"
@@ -171,13 +162,11 @@ mirror_make_node() {
     mirror_node_path="$MODDIR$node_path"
 
     if [ ! -d "$mirror_parent_dir" ]; then
-        logowl "Parent dir $mirror_parent_dir does NOT exist"
         mkdir -p "$mirror_parent_dir"
         logowl "Create parent dir $mirror_parent_dir"
     fi
 
     if [ ! -e "$mirror_node_path" ]; then
-        logowl "Node $mirror_node_path does NOT exist"
         mknod "$mirror_node_path" c 0 0
         result_make_node="$?"
         logowl "mknod $mirror_node_path c 0 0 ($result_make_node)"
@@ -249,13 +238,14 @@ module_intro >> "$LOG_FILE"
 show_system_info
 print_line
 [ -n "$MODDIR" ] && rm -rf "$MODDIR/system"
-logowl "Properties before disguise"
-check_props
 security_patch_info_disguiser
 check_make_node_support
 install_recovery_script_slayer
 print_line
 logowl "Properties after disguise"
-check_props
+logowl "Security patch date properties" ">"
+see_prop "ro.build.version.security_patch"
+see_prop "ro.system.build.security_patch"
+see_prop "ro.vendor.build.security_patch"
 print_line
 logowl "Case closed!"

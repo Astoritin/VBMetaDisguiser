@@ -2,6 +2,8 @@
 MODDIR=${0%/*}
 
 CONFIG_DIR="/data/adb/vbmetadisguiser"
+
+MOD_INTRO="Disguise vbmeta, security patch date, encryption state props and remove specified props."
 SEPARATE_LINE="----------------------------------------"
 
 ROOT_FILE_MANAGERS="
@@ -23,13 +25,14 @@ echo "$SEPARATE_LINE"
 echo "- VBMeta Disguiser"
 echo "- By Astoritin Ambrosius"
 echo "$SEPARATE_LINE"
+echo "- $MOD_INTRO"
+echo "$SEPARATE_LINE"
 echo "- Opening config dir"
 echo "$SEPARATE_LINE"
 echo "- If nothing happened after case closed"
 echo "- that means not any available root"
 echo "- file explorer is found on your device"
-echo "- Anyway, you can open config dir"
-echo "- manually on your way"
+echo "- Anyway, you can open config dir manually"
 echo "$SEPARATE_LINE"
 sleep 1
 
