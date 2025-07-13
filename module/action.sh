@@ -28,6 +28,7 @@ echo "$SEPARATE_LINE"
 echo "- $MOD_INTRO"
 echo "$SEPARATE_LINE"
 echo "- Opening config dir"
+echo "- and update VBMeta Properties manually"
 echo "$SEPARATE_LINE"
 echo "- If nothing happened after case closed"
 echo "- that means not any available root"
@@ -51,12 +52,12 @@ for fm in $ROOT_FILE_MANAGERS; do
             echo "$SEPARATE_LINE"
             echo "- Case closed!"
             sleep 1
+            . "$MODDIR/service.sh"
             return 0
         fi
     else
         echo "- $PKG is NOT installed"
     fi
-
 done
 
 echo "$SEPARATE_LINE"

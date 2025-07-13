@@ -12,7 +12,7 @@ MOD_INTRO="Disguise vbmeta, security patch date, encryption state props and remo
 
 unzip -o "$ZIPFILE" "aa-util.sh" -d "$TMPDIR" >&2
 if [ ! -f "$TMPDIR/aa-util.sh" ]; then
-    echo "! Failed to extract aa-util.sh!"
+    ui_print "! Failed to extract aa-util.sh!"
     abort "! This zip may be corrupted!"
 fi
 
@@ -33,8 +33,11 @@ extract "post-fs-data.sh"
 extract "service.sh"
 extract "uninstall.sh"
 [ ! -f "$CONFIG_FILE" ] && extract "vbmeta.conf" "$CONFIG_DIR"
+remove_config_var "update_realtime" "$CONFIG_FILE"
+remove_config_var "update_period" "$CONFIG_FILE"
+remove_config_var "addon_d_slay" "$CONFIG_FILE"
 logowl "Set permission"
 set_permission_recursive "$MODPATH" 0 0 0755 0644
 logowl "Welcome to use $MOD_NAME!"
-DESCRIPTION="[⏳Reboot to take effect.] $MOD_INTRO"
+DESCRIPTION="[🙂Reboot to take effect.] $MOD_INTRO"
 update_config_var "description" "$DESCRIPTION" "$MODPATH/module.prop"

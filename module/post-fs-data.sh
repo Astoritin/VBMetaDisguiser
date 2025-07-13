@@ -117,8 +117,6 @@ ts_sp_config_advanced() {
         fi
     fi
 
-    return 0
-
 }
 
 security_patch_info_disguiser() {
@@ -239,8 +237,7 @@ show_system_info
 print_line
 [ -n "$MODDIR" ] && rm -rf "$MODDIR/system"
 security_patch_info_disguiser
-check_make_node_support
-install_recovery_script_slayer
+check_make_node_support && install_recovery_script_slayer
 print_line
 logowl "Properties after disguise"
 logowl "Security patch date properties" ">"

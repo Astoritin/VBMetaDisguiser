@@ -14,8 +14,6 @@ MOD_INTRO="Disguise vbmeta, security patch date, encryption state props and remo
 SLAIN_PROPS="$CONFIG_DIR/slain_props.prop"
 TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
 
-update_realtime=true
-update_period=60
 avb_version="2.0"
 vbmeta_size="4096"
 boot_hash="00000000000000000000000000000000"
@@ -26,8 +24,6 @@ config_loader() {
 
     logowl "Load config"
     
-    update_realtime=$(get_config_var "update_realtime" "$CONFIG_FILE")
-    update_period=$(get_config_var "update_period" "$CONFIG_FILE")
     avb_version=$(get_config_var "avb_version" "$CONFIG_FILE")
     vbmeta_size=$(get_config_var "vbmeta_size" "$CONFIG_FILE")
     boot_hash=$(get_config_var "boot_hash" "$CONFIG_FILE")
@@ -95,7 +91,6 @@ soft_bootloader_spoof() {
     check_and_resetprop "ro.secure" "1"
     check_and_resetprop "ro.adb.secure" "1"
 
-    check_and_resetprop "ro.boot.vbmeta.device_state" "locked"
     check_and_resetprop "ro.boot.verifiedbootstate" "green"
 
     check_and_resetprop "ro.warranty_bit" "0"
@@ -207,48 +202,16 @@ logowl_init "$LOG_DIR"
 module_intro >> "$LOG_FILE"
 show_system_info
 print_line
+while [ "$(getprop sys.boot_completed)" != "1" ]; do
+    sleep 1
+done
 config_loader
 soft_bootloader_spoof
 vbmeta_disguiser
 encryption_disguiser
-boot_count=0
-while [ "$(getprop sys.boot_completed)" != "1" ]; do
-    boot_count=$((boot_count + 1))
-    sleep 1
-done
 props_slayer
 module_status_update
-set_permission_recursive "$MODDIR" 0 0 0755 0644
 set_permission_recursive "$CONFIG_DIR" 0 0 0755 0644
 print_line
 logowl "Case closed!"
 logowl_clean "$LOG_DIR" 20
-
-{
-    MOD_REAL_TIME_DESC=""
-    MOD_TURN_COUNT=0
-    while true; do
-
-        if [ "$update_realtime" = false ] || [ -f "$MODDIR/update" ]; then
-            [ "$update_realtime" = false ] && logowl "Flag update_realtime=false"
-            [ -f "$MODDIR/update" ] && logowl "Find flag update"
-            logowl "Exit background task"
-            exit 0
-        fi
-
-        [ ! -f "$CONFIG_FILE" ] && exit 1
-
-        MOD_TURN_COUNT=$((MOD_TURN_COUNT + 1))
-        logowl_init "$LOG_DIR"
-        module_intro > "$LOG_FILE"
-        show_system_info
-        logowl "Current turn: ${MOD_TURN_COUNT}, update period: $update_period"
-        print_line
-        config_loader
-        vbmeta_disguiser
-        encryption_disguiser
-        props_slayer
-        module_status_update
-        sleep "$update_period"
-    done
-} &

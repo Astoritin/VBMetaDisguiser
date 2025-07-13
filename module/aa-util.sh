@@ -99,6 +99,7 @@ logowl() {
     LOG_MSG_LEVEL="$2"
     LOG_MSG_PREFIX=""
     SEPARATE_LINE="---------------------------------------------"
+    TIMESTAMP_FORMAT="%02d:%02d:%02d:%03d | "
 
     [ -z "$LOG_MSG" ] && return 1
 
@@ -110,18 +111,24 @@ logowl() {
         "*" ) LOG_MSG_PREFIX="* " ;; 
         " ") LOG_MSG_PREFIX="  " ;;
         "-") LOG_MSG_PREFIX="" ;;
-        *) LOG_MSG_PREFIX="- " ;;
+        *) if [ -n "$LOG_FILE" ]; then
+            LOG_MSG_PREFIX=""
+            else
+            LOG_MSG_PREFIX="- "
+            fi
+            ;;
     esac
 
     if [ -n "$LOG_FILE" ]; then
+        TIME_STAMP="$(date +"%Y-%m-%d %H:%M:%S.%3N") | "
         if [ "$LOG_MSG_LEVEL" = "ERROR" ] || [ "$LOG_MSG_LEVEL" = "FATAL" ]; then
             echo "$SEPARATE_LINE" >> "$LOG_FILE"
-            echo "${LOG_MSG_PREFIX}${LOG_MSG}" >> "$LOG_FILE"
+            echo "${TIME_STAMP}${LOG_MSG_PREFIX}${LOG_MSG}" >> "$LOG_FILE"
             echo "$SEPARATE_LINE" >> "$LOG_FILE"
         elif [ "$LOG_MSG_LEVEL" = "-" ]; then
-            echo "$LOG_MSG" >> "$LOG_FILE"
+            echo "${LOG_MSG}" >> "$LOG_FILE"
         else
-            echo "${LOG_MSG_PREFIX}${LOG_MSG}" >> "$LOG_FILE"
+            echo "${TIME_STAMP}${LOG_MSG_PREFIX}${LOG_MSG}" >> "$LOG_FILE"
         fi
     else
         if command -v ui_print >/dev/null 2>&1; then
@@ -254,24 +261,28 @@ update_config_var() {
         return 2
     fi
 
-    sed -i "/^${key_name}=/c\\${key_name}=${key_value}" "$file_path"
+    if grep -q "^${key_name}=" "$file_path"; then
+        sed -i "/^${key_name}=/c\\${key_name}=${key_value}" "$file_path"
+    else
+        printf '%s=%s\n' "$key_name" "$key_value" >> "$file_path"
+    fi
+
     result_update_value=$?
     return "$result_update_value"
-
 }
 
-debug_print_values() {
+remove_config_var() {
+    key_name="$1"
+    file_path="$2"
 
-    print_line
-    logowl "All Environment variables"
-    print_line
-    env | sed 's/^/- /'
-    print_line
-    logowl "All Shell variables"
-    print_line
-    ( set -o posix; set ) | sed 's/^/- /'
-    print_line
+    if [ -z "$key_name" ] || [ -z "$file_path" ]; then
+        return 1
+    elif [ ! -f "$file_path" ]; then
+        return 2
+    fi
 
+    sed -i "/^${key_name}=/d" "$file_path"
+    return "$?"
 }
 
 show_system_info() {
@@ -366,6 +377,8 @@ clean_duplicate_items() {
     return 0
 
 }
+
+# VBMeta Disguiser specified functions
 
 see_prop() {
     prop_name=$1
