@@ -2,9 +2,12 @@
 MODDIR=${0%/*}
 
 CONFIG_DIR="/data/adb/vbmetadisguiser"
+CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 
-MOD_INTRO="Disguise vbmeta, security patch date, encryption state props and remove specified props."
+MOD_INTRO="Disguise VBMeta properties."
 SEPARATE_LINE="----------------------------------------"
+
+FROM_ACTION=true
 
 ROOT_FILE_MANAGERS="
 com.speedsoftware.rootexplorer/com.speedsoftware.rootexplorer.RootExplorer

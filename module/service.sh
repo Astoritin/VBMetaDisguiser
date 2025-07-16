@@ -9,7 +9,7 @@ CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 LOG_DIR="$CONFIG_DIR/logs"
 LOG_FILE="$LOG_DIR/vd_core_vbmeta_$(date +"%Y%m%dT%H%M%S").log"
 
-MOD_INTRO="Disguise vbmeta, security patch date, encryption state props and remove specified props."
+MOD_INTRO="Disguise VBMeta properties."
 
 SLAIN_PROPS="$CONFIG_DIR/slain_props.prop"
 TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
@@ -20,65 +20,12 @@ boot_hash="00000000000000000000000000000000"
 props_slay=false
 props_list=""
 
-config_loader() {
-
-    logowl "Load config"
-    
-    avb_version=$(get_config_var "avb_version" "$CONFIG_FILE")
-    vbmeta_size=$(get_config_var "vbmeta_size" "$CONFIG_FILE")
-    boot_hash=$(get_config_var "boot_hash" "$CONFIG_FILE")
-    crypto_state=$(get_config_var "crypto_state" "$CONFIG_FILE")
-    props_slay=$(get_config_var "props_slay" "$CONFIG_FILE")
-    props_list=$(get_config_var "props_list" "$CONFIG_FILE")
-
-}
-
-props_slayer() {
-
-    logowl "Slay props"
-
-    if [ "$props_slay" = false ]; then
-        logowl "Flag props_slay=false"
-        if [ -f "$SLAIN_PROPS" ]; then
-            logowl "$SLAIN_PROPS exists, restoring"
-            resetprop -p -f "$SLAIN_PROPS"
-            result_restore_props=$?
-            logowl "resetprop -p -f $SLAIN_PROPS ($result_restore_props)"
-            rm -f "$SLAIN_PROPS"
-        fi
-        return 0
-    elif [ "$props_slay" = true ]; then
-        logowl "Flag props_slay=true"
-        for props_r in $props_list; do
-            props_r_value="$(getprop $props_r)"
-            if [ -n "$props_r_value" ]; then
-                echo "${props_r}=$(getprop $props_r)" >> "$SLAIN_PROPS"
-                resetprop -p -d $props_r
-                result_slay_prop=$?
-                logowl "resetprop -p -d $props_r ($result_slay_prop)"
-            fi
-        done
-    fi
-    clean_duplicate_items "$SLAIN_PROPS"
-}
-
-vbmeta_disguiser() {
-
-    logowl "Disguise VBMeta partition props"
-
-    resetprop -n "ro.boot.vbmeta.device_state" "locked"
-    resetprop -n "ro.boot.vbmeta.hash_alg" "sha256"
-    resetprop -n "ro.boot.vbmeta.digest" "$boot_hash"
-    resetprop -n "ro.boot.vbmeta.size" "$vbmeta_size"
-    resetprop -n "ro.boot.vbmeta.avb_version" "$avb_version"
-
-}
-
 encryption_disguiser(){
+    crypto_state=$(get_config_var "crypto_state" "$CONFIG_FILE")
 
     logowl "Disguise Data partition props"
 
-    [ -n "$crypto_state" ] && check_and_resetprop "ro.crypto.state" "$crypto_state"
+    [ -n "$crypto_state" ] && resetprop -n "ro.crypto.state" "$crypto_state"
 
 }
 
@@ -123,70 +70,109 @@ soft_bootloader_spoof() {
 
 }
 
-module_status_update() {
+props_slayer() {
 
-    update_count=0
-    
-    desc_vbmeta_version=$(getprop 'ro.boot.vbmeta.avb_version')
-    desc_vbmeta_digest="$(getprop 'ro.boot.vbmeta.digest' | cut -c1-16)"
-    ellipsis="[..]"
-    desc_vbmeta_hash_alg=$(getprop 'ro.boot.vbmeta.hash_alg')
-    desc_vbmeta_digest="${desc_vbmeta_digest}${ellipsis}"
-    desc_vbmeta_size=$(getprop 'ro.boot.vbmeta.size')
-    desc_device_state=$(getprop 'ro.boot.vbmeta.device_state')
-    desc_crypto_state=$(getprop 'ro.crypto.state')
-    desc_security_patch=$(getprop 'ro.build.version.security_patch')
+    props_slay=$(get_config_var "props_slay" "$CONFIG_FILE")
 
-    if [ -z "$desc_vbmeta_digest" ] || echo "$desc_vbmeta_digest" | grep -qE '^0+$'; then
-        desc_vbmeta="❓VBMeta: -"
-    else
-        desc_vbmeta="⚙️VBMeta: $desc_vbmeta_digest ($desc_vbmeta_hash_alg)"
-        update_count=$((update_count + 1))
-    fi
+    logowl "Slay props"
 
-    desc_avb="AVB: ${desc_vbmeta_version:--} (${desc_device_state:--})"
-
-    [ "$desc_crypto_state" = "encrypted" ] && icon_crypto="🔒"
-    [ "$desc_crypto_state" = "unencrypted" ] && icon_crypto="🔓"
-    [ "$desc_crypto_state" = "unsupported" ] && icon_crypto="❌"
-    [ -n "$icon_crypto" ] && update_count=$((update_count + 1))
-    desc_crypto="${icon_crypto}Data: $desc_crypto_state"
-
-    if [ ! -f "$TRICKY_STORE_CONFIG_FILE" ] && [ ! -f "$CONFIG_FILE" ]; then
-        desc_ts_sp="❌Security patch config does NOT exist"
-    elif [ ! -s "$TRICKY_STORE_CONFIG_FILE" ] && [ ! -s "$CONFIG_FILE" ]; then
-        desc_ts_sp="❓Security patch: -"
-    else
-        desc_ts_sp="⚡Security patch: $desc_security_patch"
-        update_count=$((update_count + 1))
-    fi
-
-    slain_props_count=0
-    desc_slain_props=""
-    print_line
-    logowl "Read slain properties" ">"
-    while IFS= read -r line || [ -n "$line" ]; do
-        line=$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-        first_char=$(printf '%s' "$line" | cut -c1)
-        [ -z "$line" ] && continue
-        [ "$first_char" = "#" ] && continue
-        logowl "slain prop $line"
-        slain_props_count=$((slain_props_count + 1))
-    done < "$SLAIN_PROPS"
-
-    [ "$slain_props_count" -gt 0 ] && update_count=$((update_count + 1)) && desc_slain_props="📌$slain_props_count prop(s) slain"
-
-    if [ "$update_count" -gt 0 ]; then
-        if [ -n "$desc_slain_props" ]; then
-            DESCRIPTION="[✅Cleared. $desc_vbmeta, $desc_avb, $desc_slain_props, $desc_ts_sp, $desc_crypto] $MOD_INTRO"
-        else
-            DESCRIPTION="[✅Done. $desc_vbmeta, $desc_avb, $desc_ts_sp, $desc_crypto] $MOD_INTRO"
+    if [ "$props_slay" = false ]; then
+        logowl "Flag props_slay=false"
+        if [ -f "$SLAIN_PROPS" ]; then
+            logowl "$SLAIN_PROPS exists, restoring"
+            resetprop -p -f "$SLAIN_PROPS"
+            result_restore_props=$?
+            logowl "resetprop -p -f $SLAIN_PROPS ($result_restore_props)"
+            rm -f "$SLAIN_PROPS"
         fi
-    else
-        DESCRIPTION="[❌No effect. Something went wrong!] $MOD_INTRO"
+        return 0
+    elif [ "$props_slay" = true ]; then
+        logowl "Flag props_slay=true"
+        props_list=$(get_config_var "props_list" "$CONFIG_FILE")
+        for props_r in $props_list; do
+            props_r_value="$(getprop $props_r)"
+            if [ -n "$props_r_value" ]; then
+                echo "${props_r}=$(getprop $props_r)" >> "$SLAIN_PROPS"
+                resetprop -p -d $props_r
+                result_slay_prop=$?
+                logowl "resetprop -p -d $props_r ($result_slay_prop)"
+            fi
+        done
     fi
-    update_config_var "description" "$DESCRIPTION" "$MODULE_PROP"
+    clean_duplicate_items "$SLAIN_PROPS"
+}
 
+vbmeta_modstate_update() {
+    DESC_TMPDIR="$CONFIG_DIR/vd_desc.tmp"
+
+    logowl "Update module description"
+
+    get_prop() { getprop "$1" 2>/dev/null || echo "-"; }
+    is_empty_or_zero() { [ -z "$1" ] || echo "$1" | grep -qE '^0+$'; }
+
+    vbmeta_digest=$(get_prop 'ro.boot.vbmeta.digest' | cut -c1-16)
+    vbmeta_hash_alg=$(get_prop 'ro.boot.vbmeta.hash_alg')
+    vbmeta_version=$(get_prop 'ro.boot.vbmeta.avb_version')
+    device_state=$(get_prop 'ro.boot.vbmeta.device_state')
+    crypto_state=$(get_prop 'ro.crypto.state')
+    security_patch=$(get_prop 'ro.build.version.security_patch')
+
+    {
+        if is_empty_or_zero "$vbmeta_digest"; then
+            echo "❓VBMeta digest is not set"
+        else
+            echo "⚙️VBMeta hash: ${vbmeta_digest}[..] ($vbmeta_hash_alg)"
+        fi
+
+        echo "AVB ${vbmeta_version} (${device_state})"
+
+        if [ ! -f "$TRICKY_STORE_CONFIG_FILE" ] && [ ! -f "$CONFIG_FILE" ]; then
+            echo "❌Security patch date config does NOT exist"
+        elif [ ! -s "$TRICKY_STORE_CONFIG_FILE" ] && [ ! -s "$CONFIG_FILE" ]; then
+            echo "❓Security patch: -"
+        else
+            echo "⚡Security patch: $security_patch"
+        fi
+
+        case "$crypto_state" in
+            encrypted)   echo "🔒Data: encrypted" ;;
+            unencrypted) echo "🔓Data: unencrypted" ;;
+            unsupported) echo "❌Data: unsupported" ;;
+            *)           echo "❓Data: -" ;;
+        esac
+
+        slain_count=0
+        [ -s "$SLAIN_PROPS" ] && slain_count=$(grep -vE '^\s*(#|$)' "$SLAIN_PROPS" 2>/dev/null | wc -l)
+        [ "$slain_count" -gt 0 ] && echo "📌${slain_count} prop(s) slain"
+    } > "$DESC_TMPDIR"
+
+    desc_parts=$(tr '\n' ', ' < "$DESC_TMPDIR" | sed 's/,$//')
+    DESCRIPTION="[$desc_parts] $MOD_INTRO"
+    update_config_var "description" "$DESCRIPTION" "$MODULE_PROP"
+    rm -f "$DESC_TMPDIR"
+
+}
+
+see_prop() {
+    prop_name=$1
+    prop_current_value=$(getprop "$prop_name")
+
+    if [ -n "$prop_current_value" ]; then
+        logowl "$prop_name=$prop_current_value"
+        return 0
+    elif [ -z "$prop_current_value" ]; then
+        logowl "$prop_name="
+        return 1
+    fi
+
+}
+
+check_properties() {
+
+    logowl "Security patch date properties" ">"
+    see_prop "ro.build.version.security_patch"
+    see_prop "ro.system.build.security_patch"
+    see_prop "ro.vendor.build.security_patch"
     logowl "VBMeta partition properties" ">"
     see_prop "ro.boot.vbmeta.device_state"
     see_prop "ro.boot.vbmeta.avb_version"
@@ -198,20 +184,29 @@ module_status_update() {
 
 }
 
+if [ "$FROM_ACTION" = true ]; then
+    logowl "Process from action/open button"
+    soft_bootloader_spoof
+    vbmeta_disguiser
+    encryption_disguiser
+    props_slayer
+    vbmeta_modstate_update
+    return 0
+fi
+
 logowl_init "$LOG_DIR"
 module_intro >> "$LOG_FILE"
 show_system_info
 print_line
-while [ "$(getprop sys.boot_completed)" != "1" ]; do
-    sleep 1
-done
-config_loader
 soft_bootloader_spoof
 vbmeta_disguiser
 encryption_disguiser
+while [ "$(getprop sys.boot_completed)" != "1" ]; do
+    sleep 1
+done
 props_slayer
-module_status_update
-set_permission_recursive "$CONFIG_DIR" 0 0 0755 0644
+vbmeta_modstate_update
+check_properties
 print_line
 logowl "Case closed!"
 logowl_clean "$LOG_DIR" 20

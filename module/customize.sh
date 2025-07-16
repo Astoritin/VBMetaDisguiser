@@ -8,7 +8,7 @@ LOG_DIR="$CONFIG_DIR/logs"
 
 MOD_NAME="$(grep_prop name "${TMPDIR}/module.prop")"
 MOD_VER="$(grep_prop version "${TMPDIR}/module.prop") ($(grep_prop versionCode "${TMPDIR}/module.prop"))"
-MOD_INTRO="Disguise vbmeta, security patch date, encryption state props and remove specified props."
+MOD_INTRO="Disguise VBMeta properties."
 
 unzip -o "$ZIPFILE" "aa-util.sh" -d "$TMPDIR" >&2
 if [ ! -f "$TMPDIR/aa-util.sh" ]; then

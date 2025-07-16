@@ -12,139 +12,148 @@ LOG_FILE="$LOG_DIR/vd_core_patch_$(date +"%Y%m%dT%H%M%S").log"
 TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
 
 install_recovery_slay=false
+security_patch_disguise=false
 
 date_format_convert() {
-
-    key_name="$1"
-    key_date_value="$2"
-
-    [ -z "$key_name" ] && return 1
+    key_date_value=$1
     [ -z "$key_date_value" ] && return 1
 
-    len=$(echo "$key_date_value" | awk '{print length}')
-    case "$len" in
-        6)
-            if echo "$key_date_value" | grep -qE '^[0-9]{6}$'; then
-                formatted_date=$(echo "$key_date_value" | sed 's/\([0-9]\{4\}\)\([0-9]\{2\}\)/\1-\2-01/')
-            fi
+    case $key_date_value in
+        [0-9][0-9][0-9][0-9][0-9][0-9])
+            year=$(expr "$key_date_value" : '\([0-9]\{4\}\)')
+            month=$(expr "$key_date_value" : '.*\([0-9]\{2\}\)$')
+            formatted_date="${year}-${month}-01"
             ;;
-        7)
-            if echo "$key_date_value" | grep -qE '^[0-9]{4}-[0-9]{2}$'; then
-                formatted_date="${key_date_value}-01"
-                return 0
-            fi
+        [0-9][0-9][0-9][0-9]-[0-9][0-9])
+            formatted_date="${key_date_value}-01"
             ;;
-        8)
-            if echo "$key_date_value" | grep -qE '^[0-9]{8}$'; then
-                formatted_date=$(echo "$key_date_value" | sed 's/\([0-9]\{4\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)/\1-\2-\3/')
-            fi
+        [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9])
+            year=$(expr "$key_date_value" : '\([0-9]\{4\}\)')
+            month=$(expr "$key_date_value" : '.*\([0-9]\{2\}\)[0-9]\{2\}$')
+            day=$(expr "$key_date_value" : '.*\([0-9]\{2\}\)$')
+            formatted_date="${year}-${month}-${day}"
             ;;
-
-        10)
-            if echo "$key_date_value" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
-                return 0
-            fi
+        [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])
+            formatted_date=$key_date_value
             ;;
-        *)  return 1
-            ;;
+        *)  return 1;;
     esac
 
-    eval "$key_name=\"$formatted_date\""
-    logowl "Set $key_name=$formatted_date" ">"
+    if echo "$formatted_date" | awk '
+        BEGIN { ok=1 }
+        !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/ { ok=0; exit }
+        {
+            split($0, d, "-")
+            y=d[1]; m=d[2]; dd=d[3]
+            if (m < 1 || m > 12 || dd < 1 || dd > 31) ok=0
+            if (m == 2) max = (y % 4 == 0 && y % 100 != 0 || y % 400 == 0) ? 29 : 28
+            else if (m == 4 || m == 6 || m == 9 || m == 11) max = 30
+            else max = 31
+            if (dd > max) ok=0
+        }
+        END { exit !ok }
+    '
+    then
+        printf '%s\n' "$formatted_date"
+    else
+        return 1
+    fi
+}
 
+ts_sp_quick_set() {
+    date_qs=$1
+
+    [ -z "$date_qs" ] && return 1
+    check_and_resetprop "ro.build.version.security_patch" "$date_qs"
+    check_and_resetprop "ro.vendor.build.security_patch" "$date_qs"
+    check_and_resetprop "ro.system.build.security_patch" "$date_qs"
+
+}
+
+ts_sp_partition_set() {
+    date_part_qs=$1
+    date_system_qs=$2
+
+    if [ -n "$date_part_qs" ]; then
+        if [ "$date_part_qs" = "yes" ] && [ -n "$date_system_qs" ]; then
+            check_and_resetprop "ro.system.build.security_patch" "$date_system_qs"
+        elif [ "$date_part_qs" = "no" ]; then
+            logowl "Find *=no, skip disguising"
+        else
+            date_part_qs=$(date_format_convert "$date_part_qs")
+            check_and_resetprop "ro.system.build.security_patch" "$date_part_qs"
+        fi
+    fi
 }
 
 ts_sp_config_simple() {
+    ts_date=$(grep -v '^#' "$TRICKY_STORE_CONFIG_FILE" | grep -Eo '[0-9]+' | head -n 1)
 
-    logowl "$TRICKY_STORE_CONFIG_FILE is set as simple mode"
-    patch_level=$(grep -v '^#' "$TRICKY_STORE_CONFIG_FILE" | grep -Eo '[0-9]+' | head -n 1)
+    logowl "Find config file using simple mode"
 
-    [ -z "$patch_level" ] && return 1
-
-    date_format_convert "patch_level" "$patch_level"
-
-    if [ -n "$patch_level" ]; then
-        check_and_resetprop "ro.build.version.security_patch" "$patch_level"
-        check_and_resetprop "ro.vendor.build.security_patch" "$patch_level"
-        check_and_resetprop "ro.system.build.security_patch" "$patch_level"
-        return 0
+    ts_date=$(date_format_convert "$ts_date")
+    if [ -n "$ts_date" ]; then
+        ts_sp_quick_set "$ts_date"
     fi
-
 }
 
 ts_sp_config_advanced() {
-
-    logowl "$TRICKY_STORE_CONFIG_FILE is set as advanced mode"
     ts_all=$(get_config_var "all" "$TRICKY_STORE_CONFIG_FILE")
+
+    logowl "ts_all=$ts_all"
+
+    logowl "Find config file using advanced mode"
     
     if [ -n "$ts_all" ]; then
-        date_format_convert "ts_all" "$ts_all"
-        check_and_resetprop "ro.build.version.security_patch" "$ts_all"
-        check_and_resetprop "ro.vendor.build.security_patch" "$ts_all"
-        check_and_resetprop "ro.system.build.security_patch" "$ts_all"
+        ts_all=$(date_format_convert "$ts_all")
+        ts_sp_quick_set "$ts_all"
         return 0
     fi
 
     ts_system=$(get_config_var "system" "$TRICKY_STORE_CONFIG_FILE")
-    ts_boot=$(get_config_var "boot" "$TRICKY_STORE_CONFIG_FILE")
-    ts_vendor=$(get_config_var "vendor" "$TRICKY_STORE_CONFIG_FILE")
-        
-    [ -z "$ts_system" ] && [ -z "$ts_boot" ] && [ -z "$ts_vendor" ] && return 1
 
     if [ -n "$ts_system" ]; then
+        ts_system=$(date_format_convert "$ts_system")
         check_and_resetprop "ro.build.version.security_patch" "$ts_system"
     fi
 
-    if [ -n "$ts_boot" ]; then
-        if [ "$ts_boot" = "yes" ]; then
-            check_and_resetprop "ro.system.build.security_patch" "$ts_system"
-        elif [ "$ts_boot" = "no" ]; then
-            logowl "boot=no, skip disguising"
-        else
-            date_format_convert "ts_boot" "$ts_boot"
-            check_and_resetprop "ro.system.build.security_patch" "$ts_boot"
-        fi
-    fi
+    ts_boot=$(get_config_var "boot" "$TRICKY_STORE_CONFIG_FILE")
+    ts_sp_partition_set "$ts_boot" "$ts_system"
 
-    if [ -n "$ts_vendor" ]; then
-        if [ "$ts_vendor" = "yes" ]; then
-            check_and_resetprop "ro.system.build.security_patch" "$ts_system"
-        elif [ "$ts_vendor" = "no" ]; then
-            logowl "vendor=no, skip disguising"
-        else
-            date_format_convert "ts_vendor" "$ts_vendor"
-            check_and_resetprop "ro.vendor.build.security_patch" "$ts_vendor"
-        fi
-    fi
-
+    ts_vendor=$(get_config_var "vendor" "$TRICKY_STORE_CONFIG_FILE")
+    ts_sp_partition_set "$ts_vendor" "$ts_system"
 }
 
 security_patch_info_disguiser() {
+    security_patch_disguise=$(get_config_var "security_patch_disguise" "$CONFIG_FILE")
 
-    logowl "Disguise security patch properties"
-
-    if [ -f "$TRICKY_STORE_CONFIG_FILE" ]; then
-        TS_FILE_CONTENT=$(cat "$TRICKY_STORE_CONFIG_FILE")
-        if printf '%s\n' "$TS_FILE_CONTENT" | grep -q '='; then
+    if [ "$security_patch_disguise" = false ]; then
+        logowl "Security patch properties is disabled"
+        return 0
+    elif [ "$security_patch_disguise" = true ]; then
+        logowl "Disguise security patch properties"
+        if [ -f "$TRICKY_STORE_CONFIG_FILE" ]; then
+            TS_FILE_CONTENT=$(cat "$TRICKY_STORE_CONFIG_FILE")
+            if printf '%s\n' "$TS_FILE_CONTENT" | grep -q '='; then
+                ts_sp_config_advanced
+            else
+                ts_sp_config_simple
+            fi
+        elif [ ! -f "$TRICKY_STORE_CONFIG_FILE" ] && [ -f "$CONFIG_FILE" ]; then
+            logowl "Tricky Store security patch config file" "W"
+            logowl "$TRICKY_STORE_CONFIG_FILE does NOT exist"
+            logowl "$MOD_NAME will try to fetch config from $CONFIG_FILE"    
+            TRICKY_STORE_CONFIG_FILE="$CONFIG_FILE"
             ts_sp_config_advanced
         else
-            ts_sp_config_simple
+            logowl "Both Tricky Store config and" "W"
+            logowl "VBMeta Disguiser config does NOT exist"
         fi
-    elif [ ! -f "$TRICKY_STORE_CONFIG_FILE" ] && [ -f "$CONFIG_FILE" ]; then
-        logowl "Tricky Store security patch config file" "W"
-        logowl "$TRICKY_STORE_CONFIG_FILE does NOT exist"
-        logowl "$MOD_NAME will try to fetch config from $CONFIG_FILE"    
-        TRICKY_STORE_CONFIG_FILE="$CONFIG_FILE"
-        ts_sp_config_advanced
-    else
-        logowl "Both Tricky Store config and" "W"
-        logowl "VBMeta Disguiser config does NOT exist"
     fi
 
 }
 
 mirror_make_node() {
-
     node_path=$1
 
     if [ -z "$node_path" ]; then
@@ -177,11 +186,9 @@ mirror_make_node() {
         logowl "Node $mirror_node_path exists already"
         return 0
     fi
-
 }
 
 check_make_node_support() {
-    
     if [ "$DETECT_KSU" = true ] || [ "$DETECT_APATCH" = true ]; then
         logowl "Make Node support is present"
         MN_SUPPORT=true
@@ -193,9 +200,7 @@ check_make_node_support() {
             MN_SUPPORT=false
         fi
     fi
-
 }
-
 
 install_recovery_script_slayer() {
 
@@ -228,7 +233,6 @@ install_recovery_script_slayer() {
             logowl "$MOD_NAME will skip slaying install-recovery.sh"
         fi
     fi
-
 }
 
 logowl_init "$LOG_DIR"
@@ -238,11 +242,6 @@ print_line
 [ -n "$MODDIR" ] && rm -rf "$MODDIR/system"
 security_patch_info_disguiser
 check_make_node_support && install_recovery_script_slayer
-print_line
-logowl "Properties after disguise"
-logowl "Security patch date properties" ">"
-see_prop "ro.build.version.security_patch"
-see_prop "ro.system.build.security_patch"
-see_prop "ro.vendor.build.security_patch"
+vbmeta_disguiser
 print_line
 logowl "Case closed!"

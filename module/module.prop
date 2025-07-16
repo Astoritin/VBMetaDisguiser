@@ -1,7 +1,7 @@
 id=vbmetadisguiser
 name=VBMeta Disguiser
 version=v1.3.7
-versionCode=728
+versionCode=745
 author=Astoritin Ambrosius
-description=Disguise vbmeta, security patch date, encryption state props and remove specified props.
+description=Disguise VBMeta properties.
 updateJson=https://raw.githubusercontent.com/Astoritin/VBMetaDisguiser/main/webpage/update.json

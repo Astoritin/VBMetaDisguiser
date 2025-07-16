@@ -149,7 +149,7 @@ logowl() {
 
 print_line() {
 
-    length=${1:-51}
+    length=${1:-74}
     symbol=${2:--}
 
     line=$(printf "%-${length}s" | tr ' ' "$symbol")
@@ -380,20 +380,6 @@ clean_duplicate_items() {
 
 # VBMeta Disguiser specified functions
 
-see_prop() {
-    prop_name=$1
-    prop_current_value=$(getprop "$prop_name")
-
-    if [ -n "$prop_current_value" ]; then
-        logowl "$prop_name=$prop_current_value"
-        return 0
-    elif [ -z "$prop_current_value" ]; then
-        logowl "$prop_name="
-        return 1
-    fi
-
-}
-
 check_and_resetprop() {
 
     prop_name=$1
@@ -429,4 +415,19 @@ match_and_resetprop() {
         logowl "resetprop $prop_name $prop_expect_value ($result_check_and_resetprop)"
     fi
 
+}
+
+vbmeta_disguiser() {
+
+    logowl "Disguise VBMeta partition props"
+
+    avb_version=$(get_config_var "avb_version" "$CONFIG_FILE")
+    vbmeta_size=$(get_config_var "vbmeta_size" "$CONFIG_FILE")
+    boot_hash=$(get_config_var "boot_hash" "$CONFIG_FILE")
+
+    resetprop "ro.boot.vbmeta.device_state" "locked"
+    resetprop "ro.boot.vbmeta.hash_alg" "sha256"
+    resetprop "ro.boot.vbmeta.digest" "$boot_hash"
+    resetprop "ro.boot.vbmeta.size" "$vbmeta_size"
+    resetprop "ro.boot.vbmeta.avb_version" "$avb_version"
 }
