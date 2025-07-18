@@ -15,6 +15,8 @@ One of the purpose of writing this module is bypass the specific items in specif
 
 **The core reason is I don't want to do something with flashing so many modules. Therefore, I wrote this module with so many weird features.**
 
+**NOTICE: This module will only modify properties, as for the result of TEE/system API, please look for other modules**
+
 ## Steps
 
 
