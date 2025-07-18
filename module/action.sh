@@ -5,6 +5,7 @@ CONFIG_DIR="/data/adb/vbmetadisguiser"
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 
 MOD_INTRO="Disguise VBMeta properties."
+MODULE_PROP="$MODDIR/module.prop"
 SEPARATE_LINE="----------------------------------------"
 
 FROM_ACTION=true

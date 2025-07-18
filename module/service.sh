@@ -142,11 +142,11 @@ vbmeta_modstate_update() {
         esac
 
         slain_count=0
-        [ -s "$SLAIN_PROPS" ] && slain_count=$(grep -vE '^\s*(#|$)' "$SLAIN_PROPS" 2>/dev/null | wc -l)
+        [ -s "$SLAIN_PROPS" ] && slain_count=$(grep -vE '^[[:space:]]*(#|$)' "$SLAIN_PROPS" 2>/dev/null | wc -l)
         [ "$slain_count" -gt 0 ] && echo "📌${slain_count} prop(s) slain"
     } > "$DESC_TMPDIR"
 
-    desc_parts=$(tr '\n' ', ' < "$DESC_TMPDIR" | sed 's/,$//')
+    desc_parts=$(awk 'ORS=", "' "$DESC_TMPDIR" | sed 's/,[[:space:]]*$//')
     DESCRIPTION="[$desc_parts] $MOD_INTRO"
     update_config_var "description" "$DESCRIPTION" "$MODULE_PROP"
     rm -f "$DESC_TMPDIR"
