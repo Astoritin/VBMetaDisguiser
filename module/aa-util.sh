@@ -427,7 +427,7 @@ vbmeta_disguiser() {
 
     resetprop "ro.boot.vbmeta.device_state" "locked"
     resetprop "ro.boot.vbmeta.hash_alg" "sha256"
-    resetprop "ro.boot.vbmeta.digest" "$boot_hash"
+    [ -n "$boot_hash" ] && resetprop "ro.boot.vbmeta.digest" "$boot_hash"
     resetprop "ro.boot.vbmeta.size" "$vbmeta_size"
     resetprop "ro.boot.vbmeta.avb_version" "$avb_version"
 }

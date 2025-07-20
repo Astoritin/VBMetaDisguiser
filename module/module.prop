@@ -1,7 +1,7 @@
 id=vbmetadisguiser
 name=VBMeta Disguiser
-version=v1.3.7-12
-versionCode=748
+version=v1.3.7
+versionCode=750
 author=Astoritin Ambrosius
 description=Disguise VBMeta properties.
 updateJson=https://raw.githubusercontent.com/Astoritin/VBMetaDisguiser/main/webpage/update.json

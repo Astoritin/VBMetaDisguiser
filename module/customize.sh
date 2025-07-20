@@ -36,6 +36,9 @@ extract "uninstall.sh"
 remove_config_var "update_realtime" "$CONFIG_FILE"
 remove_config_var "update_period" "$CONFIG_FILE"
 remove_config_var "addon_d_slay" "$CONFIG_FILE"
+if ! get_config_var "security_patch_disguise" "$CONFIG_FILE"; then
+    update_config_var "security_patch_disguise" "false" "$CONFIG_FILE"
+fi
 logowl "Set permission"
 set_permission_recursive "$MODPATH" 0 0 0755 0644
 logowl "Welcome to use $MOD_NAME!"

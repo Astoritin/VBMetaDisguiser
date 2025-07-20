@@ -15,28 +15,35 @@ install_recovery_slay=false
 security_patch_disguise=false
 
 date_format_convert() {
-    key_date_value=$1
-    [ -z "$key_date_value" ] && return 1
+    date_to_convert=$1
+    [ -z "$date_to_convert" ] && return 1
 
-    case $key_date_value in
+    logowl "date_to_convert=${date_to_convert} (before)"
+
+    case $date_to_convert in
         [0-9][0-9][0-9][0-9][0-9][0-9])
-            year=$(expr "$key_date_value" : '\([0-9]\{4\}\)')
-            month=$(expr "$key_date_value" : '.*\([0-9]\{2\}\)$')
-            formatted_date="${year}-${month}-01"
+            logowl "Matches case: xxxxxx"
+            year=$(expr "$date_to_convert" : '\([0-9]\{4\}\)')
+            month=$(expr "$date_to_convert" : '.*\([0-9]\{2\}\)$')
+            formatted_date="${year}-${month}-05"
             ;;
         [0-9][0-9][0-9][0-9]-[0-9][0-9])
-            formatted_date="${key_date_value}-01"
+            logowl "Matches case: xxxx-xx"
+            formatted_date="${date_to_convert}-05"
             ;;
         [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9])
-            year=$(expr "$key_date_value" : '\([0-9]\{4\}\)')
-            month=$(expr "$key_date_value" : '.*\([0-9]\{2\}\)[0-9]\{2\}$')
-            day=$(expr "$key_date_value" : '.*\([0-9]\{2\}\)$')
+            logowl "Matches case: xxxxxxxx"
+            year=$(expr "$date_to_convert" : '\([0-9]\{4\}\)')
+            month=$(expr "$date_to_convert" : '.*\([0-9]\{2\}\)[0-9]\{2\}$')
+            day=$(expr "$date_to_convert" : '.*\([0-9]\{2\}\)$')
             formatted_date="${year}-${month}-${day}"
             ;;
         [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])
-            formatted_date=$key_date_value
+            logowl "Matches case: xxxx-xx-xx"
+            formatted_date=$date_to_convert
             ;;
-        *)  return 1;;
+        *)  logowl "Illegal value date_to_convert=${date_to_convert}" "W"
+            return 1;;
     esac
 
     if echo "$formatted_date" | awk '
@@ -64,6 +71,8 @@ ts_sp_quick_set() {
     date_qs=$1
 
     [ -z "$date_qs" ] && return 1
+    logowl "Start quick set process"
+    logowl "date_qs=${date_qs}"
     check_and_resetprop "ro.build.version.security_patch" "$date_qs"
     check_and_resetprop "ro.vendor.build.security_patch" "$date_qs"
     check_and_resetprop "ro.system.build.security_patch" "$date_qs"
@@ -71,17 +80,21 @@ ts_sp_quick_set() {
 }
 
 ts_sp_partition_set() {
-    date_part_qs=$1
-    date_system_qs=$2
+    partition_state=$1
+    partition_date=$2
 
-    if [ -n "$date_part_qs" ]; then
-        if [ "$date_part_qs" = "yes" ] && [ -n "$date_system_qs" ]; then
-            check_and_resetprop "ro.system.build.security_patch" "$date_system_qs"
-        elif [ "$date_part_qs" = "no" ]; then
-            logowl "Find *=no, skip disguising"
+    if [ -n "$partition_state" ]; then
+        logowl "Start partition props quick set process"
+        logowl "partition_state=${partition_state} (before)"
+        logowl "partition_date=${partition_date}"
+        if [ "$partition_state" = "yes" ] && [ -n "$partition_date" ]; then
+            check_and_resetprop "ro.system.build.security_patch" "$partition_date"
+        elif [ "$partition_state" = "no" ]; then
+            logowl "partition_state=no, skip disguising"
         else
-            date_part_qs=$(date_format_convert "$date_part_qs")
-            check_and_resetprop "ro.system.build.security_patch" "$date_part_qs"
+            partition_state=$(date_format_convert "$partition_state")
+            logowl "partition_state=${partition_state} (after)"
+            check_and_resetprop "ro.system.build.security_patch" "$partition_state"
         fi
     fi
 }
@@ -92,28 +105,31 @@ ts_sp_config_simple() {
     logowl "Find config file using simple mode"
 
     ts_date=$(date_format_convert "$ts_date")
+    logowl "ts_date=${ts_date} (before)"
     if [ -n "$ts_date" ]; then
+        logowl "ts_date=${ts_date} (after)"
         ts_sp_quick_set "$ts_date"
     fi
 }
 
 ts_sp_config_advanced() {
     ts_all=$(get_config_var "all" "$TRICKY_STORE_CONFIG_FILE")
-
-    logowl "ts_all=$ts_all"
-
     logowl "Find config file using advanced mode"
+    logowl "ts_all=${ts_all} (before)"
     
     if [ -n "$ts_all" ]; then
         ts_all=$(date_format_convert "$ts_all")
+        logowl "ts_all=${ts_all} (after)"
         ts_sp_quick_set "$ts_all"
         return 0
     fi
 
     ts_system=$(get_config_var "system" "$TRICKY_STORE_CONFIG_FILE")
+    logowl "ts_system=${ts_system} (before)"
 
     if [ -n "$ts_system" ]; then
         ts_system=$(date_format_convert "$ts_system")
+        logowl "ts_system=${ts_system} (after)"
         check_and_resetprop "ro.build.version.security_patch" "$ts_system"
     fi
 
@@ -126,8 +142,11 @@ ts_sp_config_advanced() {
 
 security_patch_info_disguiser() {
     security_patch_disguise=$(get_config_var "security_patch_disguise" "$CONFIG_FILE")
-
-    if [ "$security_patch_disguise" = false ]; then
+    if [ -z "$security_patch_disguise" ]; then
+        logowl "Security patch disguiser is NOT set yet"
+        logowl "skip processing"
+        return 1
+    elif [ "$security_patch_disguise" = false ]; then
         logowl "Security patch properties is disabled"
         return 0
     elif [ "$security_patch_disguise" = true ]; then
@@ -214,9 +233,11 @@ install_recovery_script_slayer() {
 /system/vendor/etc/recovery-resource.dat"
 
     install_recovery_slay=$(get_config_var "install_recovery_slay" "$CONFIG_FILE")
-    [ -z "$install_recovery_slay" ] && return 1
-
-    if [ "$install_recovery_slay" = false ]; then
+    if [ -z "$install_recovery_slay" ]; then
+        logowl "install-recovery.sh slayer is NOT set yet"
+        logowl "skip processing"
+        return 1
+    elif [ "$install_recovery_slay" = false ]; then
         logowl "Skip install-recovery.sh slayer"
         return 0
     elif [ "$install_recovery_slay" = true ]; then
