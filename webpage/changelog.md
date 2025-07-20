@@ -11,6 +11,7 @@
 - Fix the issue of security patch date properties not working
 - Use new method to analyse security patch date
 - Use new method to update module description
+- Add debug logs code
 
 #### CN
 
@@ -19,3 +20,4 @@
 - 修复安全补丁日期属性值不生效的问题
 - 使用新方法分析安全补丁日期
 - 使用新方法更新模块描述
+- 添加调试用日志代码
