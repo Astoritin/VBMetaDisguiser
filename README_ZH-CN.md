@@ -38,10 +38,10 @@
 6. **`install_recovery_slay`**：移除 install-recovery.sh 文件 (不修改系统)，默认禁用
 7. **`security_patch_disguise`**: 伪装安全补丁日期。该功能算是对模块 [Tricky Store](https://github.com/5ec1cff/TrickyStore) 的补充。由于 TrickyStore 仅伪装 TEE 返回的结果，VBMeta Disguiser 会伪装相应属性值，该功能默认禁用。推荐在 TrickyStore 的配置文件 (`/data/adb/tricky_store/security_patch.txt`) 中设置。你也可以在 `/data/adb/vbmetadisguiser/vbmeta.conf` 内配置安全补丁日期，但正如我所说，仅属性值会被伪装，若 APP 请求 TEE 返回的结果，那么这是徒劳的。
 8. **`all=`、`system=`、`boot=`、`vendor=`**: all 意味着所有日期共用相同的值。system 是指系统的安全补丁日期，而 boot/vendor 是指 boot/vendor 分区的安全补丁日期。格式与 [Tricky Store](https://github.com/5ec1cff/TrickyStore) 的配置文件相同。
-> 例如 all=20250705 (当你设定了all的值，system/boot/vendor 的值会被忽略)
-> system=20230301 (若你没有设置all的值, 则请你手动设置 system, boot 和 vendor 的值)
-> vendor=yes, vendor=no, vendor=20210101, yes 是指与 system 的值相同, no 是指你不需要伪装该值。你也可以手动为 vendor 分区指定新的值
-> boot=yes, boot=no, boot=20210205, 规则与 vendor 分区相同
+> 例如 all=20250705 (当你设定了all的值，system/boot/vendor 的值会被忽略)  
+> system=20230301 (若你没有设置all的值, 则请你手动设置 system, boot 和 vendor 的值)  
+> vendor=yes, vendor=no, vendor=20210101, yes 是指与 system 的值相同, no 是指你不需要伪装该值。你也可以手动为 vendor 分区指定新的值  
+> boot=yes, boot=no, boot=20210205, 规则与 vendor 分区相同  
 - 注意：[TrickyStore](https://github.com/5ec1cff/TrickyStore)的配置文件 (`/data/adb/tricky_store/security_patch.txt`) 优先级最高，其次才是VBMeta Disguiser的配置文件 (`/data/adb/vbmetadisguiser/vbmeta.conf`)。并且，为了防止不必要的交互，一旦检测到 TrickyStore 的配置文件 (`/data/adb/tricky_store/security_patch.txt`) 存在，VBMeta Disguiser 的配置文件 (`/data/adb/vbmetadisguiser/vbmeta.conf`) 中有关安全补丁日期的属性值会被忽略。
 
 ## 日志

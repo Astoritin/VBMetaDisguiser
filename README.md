@@ -38,10 +38,10 @@ One of the purpose of writing this module is bypass the specific items in specif
 6. **`install_recovery_slay`**: Delete install-recovery.sh (Systemlessly), disabled by default
 7. **`security_patch_disguise`**: Disguise the security patch date. This feature is just as a supplement to module [Tricky Store](https://github.com/5ec1cff/TrickyStore). As TrickyStore only disguises the result from TEE, VBMeta Disguiser disguises the properties. It is set as false by default. It is recommended to configure in TrickyStore's configuration file (`/data/adb/tricky_store/security_patch.txt`). You can configure security patch date in `/data/adb/vbmetadisguiser/vbmeta.conf` too but as I said, only properties will be disguised, if APPs requesting the result from TEE, it would be useless work.
 8. **`all=`、`system=`、`boot=`、`vendor=`**: all means all the dates use the same value, as system means system security patch date, boot and vendor means boot/vendor's security patch date. The format is same as [Tricky Store](https://github.com/5ec1cff/TrickyStore) 's configuration file.
-> For example: all=20250705 (As you set value all, the value of system/boot/vendor will be ignored)
-> system=20230301 (If you don't set all, please set system, boot and vendor manually)
-> vendor=yes, vendor=no, vendor=20210101, yes means it is same as the value of system, no means you don't need to disguise this, you can always order a new value for vendor
-> boot=yes, boot=no, boot=20210205, the rule is same as vendor partition
+> For example: all=20250705 (As you set value all, the value of system/boot/vendor will be ignored)  
+> system=20230301 (If you don't set all, please set system, boot and vendor manually)  
+> vendor=yes, vendor=no, vendor=20210101, yes means it is same as the value of system, no means you don't need to disguise this, you can always order a new value for vendor  
+> boot=yes, boot=no, boot=20210205, the rule is same as vendor partition  
 - NOTICE: TrickyStore's configuration (`/data/adb/tricky_store/security_patch.txt`) has the highest priority, with VBMeta Disguiser's built-in configuration (`/data/adb/vbmetadisguiser/vbmeta.conf`) coming second. In order to avoid unnecessary interact, the value of VBMeta Disguiser config file (`/data/adb/vbmetadisguiser/vbmeta.conf`) related to security patch date properties will be ignored once detecting TrickyStore config file (`/data/adb/tricky_store/security_patch.txt`) exists.
 
 
