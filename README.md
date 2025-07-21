@@ -1,16 +1,16 @@
 English | [简体中文](README_ZH-CN.md)
 
-# VBMeta Disguiser / VBMeta 伪装者
-A Magisk module to disguise the properties of vbmeta / 一个用于伪装 VBMeta 属性的 Magisk 模块
+# VBMeta Disguiser
+A Magisk module to disguise the properties of vbmeta
 
 ## Supported Root Solution
 [Magisk](https://github.com/topjohnwu/Magisk) | [KernelSU](https://github.com/tiann/KernelSU) | [APatch](https://github.com/bmax121/APatch)
 
 ## Why does this module exist?
 One of the purpose of writing this module is bypass the specific items in specific detectors...lol.
-> Who knows? Maybe specific APPs might also use this point to check out whether the device has unlocked bootloader.
+> Who knows? Maybe specific APPs might also use this point to check out whether the device has unlocked bootloader.  
 
-**The core reason is I don't want to do something with flashing so many modules. Therefore, I wrote this module with so many weird features.**
+**The core reason is I don't want to do something with flashing so many modules. Therefore, I wrote this module with so many weird features.**  
 **NOTICE: This module will only modify properties, as for the result of TEE/system API, please look for other modules**
 
 ## Steps
@@ -40,7 +40,7 @@ One of the purpose of writing this module is bypass the specific items in specif
 - NOTICE: TrickyStore's configuration (`/data/adb/tricky_store/security_patch.txt`) has the highest priority, with VBMeta Disguiser's built-in configuration (`/data/adb/vbmetadisguiser/vbmeta.conf`) coming second. In order to avoid unnecessary interact, the value of VBMeta Disguiser config file (`/data/adb/vbmetadisguiser/vbmeta.conf`) related to security patch date properties will be ignored once detecting TrickyStore config file (`/data/adb/tricky_store/security_patch.txt`) exists.
 
 ## Logs
-Logs are saved in `/data/adb/vbmetadisguiser/logs`, as config file `/data/adb/vbmetadisguiser`.
+Logs are saved in `/data/adb/vbmetadisguiser/logs`, as config file `/data/adb/vbmetadisguiser`.  
 **When reporting issues, please simply zip the entire `vbmetadisguiser` folder and upload it.**
 
 ### NOTICE

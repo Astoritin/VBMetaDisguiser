@@ -1,7 +1,7 @@
 [English](README.md) | 简体中文
 
-# VBMeta 伪装者 / VBMeta Disguiser  
-一个用于伪装 VBMeta 属性的 Magisk 模块 / A Magisk module to disguise the properties of vbmeta  
+# VBMeta 伪装者
+一个用于伪装 VBMeta 属性的 Magisk 模块
 
 ## 支持的 Root 方案  
 [Magisk](https://github.com/topjohnwu/Magisk) | [KernelSU](https://github.com/tiann/KernelSU) | [APatch](https://github.com/bmax121/APatch)
@@ -11,7 +11,6 @@
 > 不过也说不准会有特定的软件也会根据这一点判断是不是已经解锁的设备，谁知道呢。  
 
 **主要原因是因为有些事情不想写多个模块去做，索性写了这么个有着各种奇怪功能的模块。**  
-
 **注意: 该模块只修改属性值，对于TEE/系统API返回的结果，请寻找其他模块**
 
 ## 步骤
