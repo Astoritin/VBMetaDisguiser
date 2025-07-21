@@ -27,17 +27,21 @@
 > 默认情况下，VBMeta 分区的大小值会被设定为 `4096` (4KB)
 3. **`crypto_state`**: Data 分区的加密状态。
 > 加密状态默认情况下不会被设置。若有需求，你可以手动设置该选项为 `encrypted` 以伪装设备已被加密。(支持 `encrypted` 已加密,`unencrypted` 未加密或 `unsupported`不支持加密)
-4. **`all=`、`system=`、`boot=`、`vendor=`**: all 表示所有分区都使用同一个值，system表示系统分区的补丁日期，boot表示boot分区的补丁日期，vendor表示供应商分区补丁日期。
-5. **`props_slay`**: 移除指定的属性值，默认值为`false`(禁用)。
-6. **`props_list`**: 一个用于永久移除系统属性值的系统属性清单。
+4. **`props_slay`**: 移除指定的属性值，默认值为`false`(禁用)。
+5. **`props_list`**: 一个用于永久移除系统属性值的系统属性清单。
 > 支持多行，一行一个，请将这些项目用双引号括起来。例如：`props_list="persist.a persist.b persist.c"`
 - 为了让属性值移除生效，你需要重启你的设备一到两次
 > 这不是bug，是根据 resetprop 移除属性值的机制不得不这么做，只重启一次你可能会在 Native Test 中看到项目 `Property Modified (10)`
 - 这些属性值会在设定 `props_slay=false` 并完成一次重启，或正常卸载 VBMeta Disguiser 时被还原
 - 注意：属性值备份文件位于 `/data/adb/vbmetadisguiser/slain_prop.prop`，请勿随意删除
-> 警告: 若你移除该文件，这些属性值将永久丢失，可能只有取消root并重新root才能还原这些属性值
-7. **`install_recovery_slay`**：移除 install-recovery.sh 文件 (不修改系统)，默认禁用
-8. 从v1.2.6开始，你也可以在 `/data/adb/vbmetadisguiser/vbmeta.conf` 中设定想要伪装的安全补丁日期。
+> 警告: 若你移除该文件，这些属性值将永久丢失
+6. **`install_recovery_slay`**：移除 install-recovery.sh 文件 (不修改系统)，默认禁用
+7. **`security_patch_disguise`**: 伪装安全补丁日期。该功能算是对模块 [Tricky Store](https://github.com/5ec1cff/TrickyStore) 的补充。由于 TrickyStore 仅伪装 TEE 返回的结果，VBMeta Disguiser 会伪装相应属性值，该功能默认禁用。推荐在 TrickyStore 的配置文件 (`/data/adb/tricky_store/security_patch.txt`) 中设置。你也可以在 `/data/adb/vbmetadisguiser/vbmeta.conf` 内配置安全补丁日期，但正如我所说，仅属性值会被伪装，若 APP 请求 TEE 返回的结果，那么这是徒劳的。
+8. **`all=`、`system=`、`boot=`、`vendor=`**: all 意味着所有日期共用相同的值。system 是指系统的安全补丁日期，而 boot/vendor 是指 boot/vendor 分区的安全补丁日期。格式与 [Tricky Store](https://github.com/5ec1cff/TrickyStore) 的配置文件相同。
+> 例如 all=20250705 (当你设定了all的值，system/boot/vendor 的值会被忽略)
+> system=20230301 (若你没有设置all的值, 则请你手动设置 system, boot 和 vendor 的值)
+> vendor=yes, vendor=no, vendor=20210101, yes 是指与 system 的值相同, no 是指你不需要伪装该值。你也可以手动为 vendor 分区指定新的值
+> boot=yes, boot=no, boot=20210205, 规则与 vendor 分区相同
 - 注意：[TrickyStore](https://github.com/5ec1cff/TrickyStore)的配置文件 (`/data/adb/tricky_store/security_patch.txt`) 优先级最高，其次才是VBMeta Disguiser的配置文件 (`/data/adb/vbmetadisguiser/vbmeta.conf`)。并且，为了防止不必要的交互，一旦检测到 TrickyStore 的配置文件 (`/data/adb/tricky_store/security_patch.txt`) 存在，VBMeta Disguiser 的配置文件 (`/data/adb/vbmetadisguiser/vbmeta.conf`) 中有关安全补丁日期的属性值会被忽略。
 
 ## 日志

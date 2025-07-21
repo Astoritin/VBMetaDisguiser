@@ -27,18 +27,23 @@ One of the purpose of writing this module is bypass the specific items in specif
 > The size of VBMeta partition will be set as `4096` by default.
 3. **`crypto_state`**: the encryption state of Data partition.
 > The encryption status will NOT be set by default. If needed, you can set this option as `encrypted` to pretend your device has been encrypted. (Support `encrypted`,`unencrypted` or `unsupported`)
-4. **`all=`、`system=`、`boot=`、`vendor=`**: all means all the partitions use the same value, as system means system partition security patch, so are boot and vendor.
-5. **`props_slay`**: remove ordered properties, it is set as `false` by default.
-6. **`props_list`**: a system properties list to remove system properties forever.
+4. **`props_slay`**: remove ordered properties, it is set as `false` by default.
+5. **`props_list`**: a system properties list to remove system properties forever.
 > supports multi-line, one per line, please enclose the items in double quotation marks. For example: `props_list="persist.a persist.b persist.c"`
 - To apply properties removal, you need to reboot your device once or twice.
 > This is NOT a bug. According to how resetprop works, you have to do it. You may see item `Property Modified (10)` in detector Native Test if only reboot once.
 - These properties will be back (restored) as setting `props_slay=false` and finishing reboot or uninstalling VBMeta Disguiser in normal way
 - NOTICE: properties backup file are located in `/data/adb/vbmetadisguiser/slain_prop.prop`, please do NOT remove it casually
-> WARN: if you remove it, these properties will be lost forever, which means you can only unroot and root again to restore properties
-7. **`install_recovery_slay`**: Delete install-recovery.sh (Systemlessly), disabled by default
-8. Since v1.2.6, you can configure security patch date in `/data/adb/vbmetadisguiser/vbmeta.conf` too.
+> WARN: if you remove it, these properties will be lost forever
+6. **`install_recovery_slay`**: Delete install-recovery.sh (Systemlessly), disabled by default
+7. **`security_patch_disguise`**: Disguise the security patch date. This feature is just as a supplement to module [Tricky Store](https://github.com/5ec1cff/TrickyStore). As TrickyStore only disguises the result from TEE, VBMeta Disguiser disguises the properties. It is set as false by default. It is recommended to configure in TrickyStore's configuration file (`/data/adb/tricky_store/security_patch.txt`). You can configure security patch date in `/data/adb/vbmetadisguiser/vbmeta.conf` too but as I said, only properties will be disguised, if APPs requesting the result from TEE, it would be useless work.
+8. **`all=`、`system=`、`boot=`、`vendor=`**: all means all the dates use the same value, as system means system security patch date, boot and vendor means boot/vendor's security patch date. The format is same as [Tricky Store](https://github.com/5ec1cff/TrickyStore) 's configuration file.
+> For example: all=20250705 (As you set value all, the value of system/boot/vendor will be ignored)
+> system=20230301 (If you don't set all, please set system, boot and vendor manually)
+> vendor=yes, vendor=no, vendor=20210101, yes means it is same as the value of system, no means you don't need to disguise this, you can always order a new value for vendor
+> boot=yes, boot=no, boot=20210205, the rule is same as vendor partition
 - NOTICE: TrickyStore's configuration (`/data/adb/tricky_store/security_patch.txt`) has the highest priority, with VBMeta Disguiser's built-in configuration (`/data/adb/vbmetadisguiser/vbmeta.conf`) coming second. In order to avoid unnecessary interact, the value of VBMeta Disguiser config file (`/data/adb/vbmetadisguiser/vbmeta.conf`) related to security patch date properties will be ignored once detecting TrickyStore config file (`/data/adb/tricky_store/security_patch.txt`) exists.
+
 
 ## Logs
 Logs are saved in `/data/adb/vbmetadisguiser/logs`, as config file `/data/adb/vbmetadisguiser`.  
