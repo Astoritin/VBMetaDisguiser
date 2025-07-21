@@ -42,6 +42,7 @@ One of the purpose of writing this module is bypass the specific items in specif
 
 ## Logs
 Logs are saved in `/data/adb/vbmetadisguiser/logs`, as config file `/data/adb/vbmetadisguiser`.  
+  
 **When reporting issues, please simply zip the entire `vbmetadisguiser` folder and upload it.**
 
 ### NOTICE

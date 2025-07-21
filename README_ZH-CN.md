@@ -42,6 +42,7 @@
 
 ## 日志
 日志被保存在 `/data/adb/vbmetadisguiser/logs`，配置文件被保存在 `/data/adb/vbmetadisguiser`。  
+  
 **反馈问题时，请直接打包整个vbmetadisguiser文件夹后上传。**
 
 ### 注意
