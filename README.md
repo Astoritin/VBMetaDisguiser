@@ -11,6 +11,7 @@ One of the purpose of writing this module is bypass the specific items in specif
 > Who knows? Maybe specific APPs might also use this point to check out whether the device has unlocked bootloader.  
 
 **The core reason is I don't want to do something with flashing so many modules. Therefore, I wrote this module with so many weird features.**  
+  
 **NOTICE: This module will only modify properties, as for the result of TEE/system API, please look for other modules**
 
 ## Steps
