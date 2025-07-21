@@ -1,15 +1,17 @@
 [English](README.md) | 简体中文
 
-# VBMeta 伪装者 / VBMeta Disguiser
-一个用于伪装 VBMeta 属性的 Magisk 模块 / A Magisk module to disguise the properties of vbmeta
+# VBMeta 伪装者 / VBMeta Disguiser  
+一个用于伪装 VBMeta 属性的 Magisk 模块 / A Magisk module to disguise the properties of vbmeta  
 
-## 支持的 Root 方案
+## 支持的 Root 方案  
 [Magisk](https://github.com/topjohnwu/Magisk) | [KernelSU](https://github.com/tiann/KernelSU) | [APatch](https://github.com/bmax121/APatch)
 
-## 为什么存在这个模块？
+## 为什么存在这个模块？  
 该模块的目的之一只是为了过某两个检测器的某一项……哈哈。
-> 不过也说不准会有特定的软件也会根据这一点判断是不是已经解锁的设备，谁知道呢。
-**主要原因是因为有些事情不想写多个模块去做，索性写了这么个有着各种奇怪功能的模块。**
+> 不过也说不准会有特定的软件也会根据这一点判断是不是已经解锁的设备，谁知道呢。  
+
+**主要原因是因为有些事情不想写多个模块去做，索性写了这么个有着各种奇怪功能的模块。**  
+
 **注意: 该模块只修改属性值，对于TEE/系统API返回的结果，请寻找其他模块**
 
 ## 步骤
@@ -39,7 +41,7 @@
 - 注意：[TrickyStore](https://github.com/5ec1cff/TrickyStore)的配置文件 (`/data/adb/tricky_store/security_patch.txt`) 优先级最高，其次才是VBMeta Disguiser的配置文件 (`/data/adb/vbmetadisguiser/vbmeta.conf`)。并且，为了防止不必要的交互，一旦检测到 TrickyStore 的配置文件 (`/data/adb/tricky_store/security_patch.txt`) 存在，VBMeta Disguiser 的配置文件 (`/data/adb/vbmetadisguiser/vbmeta.conf`) 中有关安全补丁日期的属性值会被忽略。
 
 ## 日志
-日志被保存在 `/data/adb/vbmetadisguiser/logs`，配置文件被保存在 `/data/adb/vbmetadisguiser`。
+日志被保存在 `/data/adb/vbmetadisguiser/logs`，配置文件被保存在 `/data/adb/vbmetadisguiser`。  
 **反馈问题时，请直接打包整个vbmetadisguiser文件夹后上传。**
 
 ### 注意
