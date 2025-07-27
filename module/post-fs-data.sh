@@ -1,7 +1,7 @@
 #!/system/bin/sh
 MODDIR=${0%/*}
 
-. "$MODDIR/aa-util.sh"
+. "$MODDIR/wanderer.sh"
 
 CONFIG_DIR="/data/adb/vbmetadisguiser"
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
@@ -114,6 +114,7 @@ ts_sp_config_simple() {
 
 ts_sp_config_advanced() {
     ts_all=$(get_config_var "all" "$TRICKY_STORE_CONFIG_FILE")
+
     logowl "Find config file using advanced mode"
     logowl "ts_all=${ts_all} (before)"
     
@@ -142,6 +143,7 @@ ts_sp_config_advanced() {
 
 security_patch_info_disguiser() {
     security_patch_disguise=$(get_config_var "security_patch_disguise" "$CONFIG_FILE")
+
     if [ -z "$security_patch_disguise" ]; then
         logowl "Security patch disguiser is NOT set yet"
         logowl "skip processing"
@@ -241,6 +243,7 @@ install_recovery_script_slayer() {
         logowl "Skip install-recovery.sh slayer"
         return 0
     elif [ "$install_recovery_slay" = true ]; then
+        check_make_node_support
         if [ "$MN_SUPPORT" = true ]; then
             logowl "Slaying install-recovery.sh"
             for irsh in $install_recovery_script_path; do
@@ -262,7 +265,6 @@ show_system_info
 print_line
 [ -n "$MODDIR" ] && rm -rf "$MODDIR/system"
 security_patch_info_disguiser
-check_make_node_support && install_recovery_script_slayer
-vbmeta_disguiser
+install_recovery_script_slayer
 print_line
 logowl "Case closed!"

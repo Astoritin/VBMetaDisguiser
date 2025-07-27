@@ -285,6 +285,21 @@ remove_config_var() {
     return "$?"
 }
 
+append_config_var() {
+    key_name="$1"
+    file_path="$2"
+    expected_value="$3"
+    
+    if [ -z "$key_name" ] || [ -z "$file_path" ]; then
+        return 1
+    elif [ ! -f "$file_path" ]; then
+        return 2
+    fi
+    if [ -z "$(grep_config_var "$key_name" "$CONFIG_FILE")" ]; then
+        update_config_var "$key_name" "$expected_value" "$CONFIG_FILE"
+    fi
+}
+
 show_system_info() {
 
     logowl "Device: $(getprop ro.product.brand) $(getprop ro.product.model) ($(getprop ro.product.device))"
@@ -415,19 +430,4 @@ match_and_resetprop() {
         logowl "resetprop $prop_name $prop_expect_value ($result_check_and_resetprop)"
     fi
 
-}
-
-vbmeta_disguiser() {
-
-    logowl "Disguise VBMeta partition props"
-
-    avb_version=$(get_config_var "avb_version" "$CONFIG_FILE")
-    vbmeta_size=$(get_config_var "vbmeta_size" "$CONFIG_FILE")
-    boot_hash=$(get_config_var "boot_hash" "$CONFIG_FILE")
-
-    resetprop "ro.boot.vbmeta.device_state" "locked"
-    resetprop "ro.boot.vbmeta.hash_alg" "sha256"
-    [ -n "$boot_hash" ] && resetprop "ro.boot.vbmeta.digest" "$boot_hash"
-    resetprop "ro.boot.vbmeta.size" "$vbmeta_size"
-    resetprop "ro.boot.vbmeta.avb_version" "$avb_version"
 }

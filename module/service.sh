@@ -1,7 +1,7 @@
 #!/system/bin/sh
 MODDIR=${0%/*}
 
-. "$MODDIR/aa-util.sh"
+. "$MODDIR/wanderer.sh"
 
 CONFIG_DIR="/data/adb/vbmetadisguiser"
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
@@ -17,8 +17,26 @@ TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
 avb_version="2.0"
 vbmeta_size="4096"
 boot_hash="00000000000000000000000000000000"
+
 props_slay=false
 props_list=""
+
+bootloader_props_spoof=false
+
+vbmeta_disguiser() {
+
+    logowl "Disguise VBMeta partition props"
+
+    avb_version=$(get_config_var "avb_version" "$CONFIG_FILE")
+    vbmeta_size=$(get_config_var "vbmeta_size" "$CONFIG_FILE")
+    boot_hash=$(get_config_var "boot_hash" "$CONFIG_FILE")
+
+    resetprop "ro.boot.vbmeta.device_state" "locked"
+    resetprop "ro.boot.vbmeta.hash_alg" "sha256"
+    [ -n "$boot_hash" ] && resetprop "ro.boot.vbmeta.digest" "$boot_hash"
+    resetprop "ro.boot.vbmeta.size" "$vbmeta_size"
+    resetprop "ro.boot.vbmeta.avb_version" "$avb_version"
+}
 
 encryption_disguiser(){
     crypto_state=$(get_config_var "crypto_state" "$CONFIG_FILE")
@@ -29,52 +47,54 @@ encryption_disguiser(){
 
 }
 
-soft_bootloader_spoof() {
+bootloader_properties_spoof() {
+    bootloader_props_spoof=$(get_config_var "bootloader_props_spoof" "$CONFIG_FILE")
 
-    logowl "Spoof bootloader props"
+    if [ "$bootloader_props_spoof" = false ]; then
+        logowl "Skip bootloader properties spoofing"
+    elif [ "$bootloader_props_spoof" = true ]; then
+        logowl "Spoof bootloader props"
 
-    check_and_resetprop "ro.debuggable" "0"
-    check_and_resetprop "ro.force.debuggable" "0"
-    check_and_resetprop "ro.secure" "1"
-    check_and_resetprop "ro.adb.secure" "1"
+        check_and_resetprop "ro.debuggable" "0"
+        check_and_resetprop "ro.force.debuggable" "0"
+        check_and_resetprop "ro.secure" "1"
+        check_and_resetprop "ro.adb.secure" "1"
 
-    check_and_resetprop "ro.boot.verifiedbootstate" "green"
+        check_and_resetprop "ro.boot.verifiedbootstate" "green"
 
-    check_and_resetprop "ro.warranty_bit" "0"
-    check_and_resetprop "ro.boot.warranty_bit" "0"
-    check_and_resetprop "ro.vendor.boot.warranty_bit" "0"
-    check_and_resetprop "ro.vendor.warranty_bit" "0"
+        check_and_resetprop "ro.warranty_bit" "0"
+        check_and_resetprop "ro.boot.warranty_bit" "0"
+        check_and_resetprop "ro.vendor.boot.warranty_bit" "0"
+        check_and_resetprop "ro.vendor.warranty_bit" "0"
 
-    check_and_resetprop "ro.boot.realmebootstate" "green"
-    check_and_resetprop "ro.boot.realme.lockstate" "1"
+        check_and_resetprop "ro.boot.realmebootstate" "green"
+        check_and_resetprop "ro.boot.realme.lockstate" "1"
 
-    check_and_resetprop "ro.is_ever_orange" "0"
-    check_and_resetprop "ro.secureboot.lockstate" "locked"
+        check_and_resetprop "ro.is_ever_orange" "0"
+        check_and_resetprop "ro.secureboot.lockstate" "locked"
 
-    for prop in $(resetprop | grep -oE 'ro.*.build.tags'); do
-        check_and_resetprop "$prop" "release-keys"
-    done
-    for prop in $(resetprop | grep -oE 'ro.*.build.type'); do
-        check_and_resetprop "$prop" "user"
-    done
-    check_and_resetprop "ro.build.type" "user"
-    check_and_resetprop "ro.build.tags" "release-keys"
+        for prop in $(resetprop | grep -oE 'ro.*.build.tags'); do
+            check_and_resetprop "$prop" "release-keys"
+        done
+        for prop in $(resetprop | grep -oE 'ro.*.build.type'); do
+            check_and_resetprop "$prop" "user"
+        done
+        check_and_resetprop "ro.build.type" "user"
+        check_and_resetprop "ro.build.tags" "release-keys"
 
-    check_and_resetprop "sys.oem_unlock_allowed" "0"
-    check_and_resetprop "ro.oem_unlock_supported" "0"
+        check_and_resetprop "sys.oem_unlock_allowed" "0"
+        check_and_resetprop "ro.oem_unlock_supported" "0"
 
-    check_and_resetprop "init.svc.flash_recovery" "stopped"
-    match_and_resetprop "ro.bootmode" "recovery" "unknown"
-    match_and_resetprop "ro.boot.bootmode" "recovery" "unknown"
-    match_and_resetprop "vendor.boot.bootmode" "recovery" "unknown"
+        check_and_resetprop "init.svc.flash_recovery" "stopped"
+        match_and_resetprop "ro.bootmode" "recovery" "unknown"
+        match_and_resetprop "ro.boot.bootmode" "recovery" "unknown"
+        match_and_resetprop "vendor.boot.bootmode" "recovery" "unknown"
+    fi
 
 }
 
 props_slayer() {
-
     props_slay=$(get_config_var "props_slay" "$CONFIG_FILE")
-
-    logowl "Slay props"
 
     if [ "$props_slay" = false ]; then
         logowl "Flag props_slay=false"
@@ -83,11 +103,14 @@ props_slayer() {
             resetprop -p -f "$SLAIN_PROPS"
             result_restore_props=$?
             logowl "resetprop -p -f $SLAIN_PROPS ($result_restore_props)"
-            rm -f "$SLAIN_PROPS"
+            if [ "$result_restore_props" -eq 0 ]; then
+                logowl "Remove slain properties backup file"
+                rm -f "$SLAIN_PROPS"
+            fi
         fi
         return 0
     elif [ "$props_slay" = true ]; then
-        logowl "Flag props_slay=true"
+        logowl "Slay props"
         props_list=$(get_config_var "props_list" "$CONFIG_FILE")
         for props_r in $props_list; do
             props_r_value="$(getprop $props_r)"
@@ -128,8 +151,6 @@ vbmeta_modstate_update() {
 
         if [ ! -f "$TRICKY_STORE_CONFIG_FILE" ] && [ ! -f "$CONFIG_FILE" ]; then
             echo "❌Security patch date config does NOT exist"
-        elif [ ! -s "$TRICKY_STORE_CONFIG_FILE" ] && [ ! -s "$CONFIG_FILE" ]; then
-            echo "❓Security patch: -"
         else
             echo "⚡Security patch: $security_patch"
         fi
@@ -138,7 +159,7 @@ vbmeta_modstate_update() {
             encrypted)   echo "🔒Data: encrypted" ;;
             unencrypted) echo "🔓Data: unencrypted" ;;
             unsupported) echo "❌Data: unsupported" ;;
-            *)           echo "❓Data: -" ;;
+            *)           echo "❓Data: $crypto_state" ;;
         esac
 
         slain_count=0
@@ -153,7 +174,7 @@ vbmeta_modstate_update() {
 
 }
 
-see_prop() {
+print_prop() {
     prop_name=$1
     prop_current_value=$(getprop "$prop_name")
 
@@ -167,26 +188,26 @@ see_prop() {
 
 }
 
-check_properties() {
+print_result() {
 
     logowl "Security patch date properties" ">"
-    see_prop "ro.build.version.security_patch"
-    see_prop "ro.system.build.security_patch"
-    see_prop "ro.vendor.build.security_patch"
+    print_prop "ro.build.version.security_patch"
+    print_prop "ro.system.build.security_patch"
+    print_prop "ro.vendor.build.security_patch"
     logowl "VBMeta partition properties" ">"
-    see_prop "ro.boot.vbmeta.device_state"
-    see_prop "ro.boot.vbmeta.avb_version"
-    see_prop "ro.boot.vbmeta.hash_alg"
-    see_prop "ro.boot.vbmeta.size"
-    see_prop "ro.boot.vbmeta.digest"
+    print_prop "ro.boot.vbmeta.device_state"
+    print_prop "ro.boot.vbmeta.avb_version"
+    print_prop "ro.boot.vbmeta.hash_alg"
+    print_prop "ro.boot.vbmeta.size"
+    print_prop "ro.boot.vbmeta.digest"
     logowl "Data partition properties" ">"
-    see_prop "ro.crypto.state"
+    print_prop "ro.crypto.state"
 
 }
 
 if [ "$FROM_ACTION" = true ]; then
     logowl "Process from action/open button"
-    soft_bootloader_spoof
+    bootloader_properties_spoof
     vbmeta_disguiser
     encryption_disguiser
     props_slayer
@@ -198,7 +219,7 @@ logowl_init "$LOG_DIR"
 module_intro >> "$LOG_FILE"
 show_system_info
 print_line
-soft_bootloader_spoof
+bootloader_properties_spoof
 vbmeta_disguiser
 encryption_disguiser
 while [ "$(getprop sys.boot_completed)" != "1" ]; do
@@ -206,7 +227,7 @@ while [ "$(getprop sys.boot_completed)" != "1" ]; do
 done
 props_slayer
 vbmeta_modstate_update
-check_properties
+print_result
 print_line
 logowl "Case closed!"
 logowl_clean "$LOG_DIR" 20

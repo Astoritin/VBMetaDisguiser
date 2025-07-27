@@ -43,6 +43,7 @@
 > vendor=yes, vendor=no, vendor=20210101, yes 是指与 system 的值相同, no 是指你不需要伪装该值。你也可以手动为 vendor 分区指定新的值  
 > boot=yes, boot=no, boot=20210205, 规则与 vendor 分区相同  
 - 注意：[TrickyStore](https://github.com/5ec1cff/TrickyStore)的配置文件 (`/data/adb/tricky_store/security_patch.txt`) 优先级最高，其次才是VBMeta Disguiser的配置文件 (`/data/adb/vbmetadisguiser/vbmeta.conf`)。并且，为了防止不必要的交互，一旦检测到 TrickyStore 的配置文件 (`/data/adb/tricky_store/security_patch.txt`) 存在，VBMeta Disguiser 的配置文件 (`/data/adb/vbmetadisguiser/vbmeta.conf`) 中有关安全补丁日期的属性值会被忽略。
+9. **`bootloader_props_spoof`**: 伪装 bootloader 属性值为锁定，默认禁用
 
 ## 日志
 日志被保存在 `/data/adb/vbmetadisguiser/logs`，配置文件被保存在 `/data/adb/vbmetadisguiser`。  
@@ -56,4 +57,5 @@
 ## 鸣谢
 - [Magisk](https://github.com/topjohnwu/Magisk) - 让一切皆有可能的基石
 - [LSPosed](https://github.com/LSPosed/LSPosed) - extract和root方案检查函数实现
+- [Shamiko](https://github.com/LSPosed/LSPosed.github.io) - Bootloader属性值伪装函数的实现
 - [Zygisk Next](https://github.com/Dr-TSNG/ZygiskNext) - extract和root方案检查函数实现
