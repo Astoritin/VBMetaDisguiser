@@ -41,6 +41,7 @@ remove_config_var "addon_d_slay" "$CONFIG_FILE"
 update_config_var "description" "$DESCRIPTION" "$MODPATH/module.prop"
 append_config_var "security_patch_disguise" "$CONFIG_FILE" "false"
 append_config_var "bootloader_props_spoof" "$CONFIG_FILE" "false"
+append_config_var "build_type_spoof" "$CONFIG_FILE" "false"
 logowl "Set permission"
 set_permission_recursive "$MODPATH" 0 0 0755 0644
 logowl "Welcome to use $MOD_NAME!"

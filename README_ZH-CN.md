@@ -44,6 +44,8 @@
 > boot=yes, boot=no, boot=20210205, 规则与 vendor 分区相同  
 - 注意：[TrickyStore](https://github.com/5ec1cff/TrickyStore)的配置文件 (`/data/adb/tricky_store/security_patch.txt`) 优先级最高，其次才是VBMeta Disguiser的配置文件 (`/data/adb/vbmetadisguiser/vbmeta.conf`)。并且，为了防止不必要的交互，一旦检测到 TrickyStore 的配置文件 (`/data/adb/tricky_store/security_patch.txt`) 存在，VBMeta Disguiser 的配置文件 (`/data/adb/vbmetadisguiser/vbmeta.conf`) 中有关安全补丁日期的属性值会被忽略。
 9. **`bootloader_props_spoof`**: 伪装 bootloader 属性值为锁定，默认禁用
+10. **`build_type_spoof`**: 伪装 ROM 的构建类别为 user/release，默认禁用
+- 注意：在某些 ROM 中，随意启用该功能将导致系统无法启动！
 
 ## 日志
 日志被保存在 `/data/adb/vbmetadisguiser/logs`，配置文件被保存在 `/data/adb/vbmetadisguiser`。  

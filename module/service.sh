@@ -22,6 +22,7 @@ props_slay=false
 props_list=""
 
 bootloader_props_spoof=false
+build_type_spoof=false
 
 vbmeta_disguiser() {
 
@@ -73,15 +74,6 @@ bootloader_properties_spoof() {
         check_and_resetprop "ro.is_ever_orange" "0"
         check_and_resetprop "ro.secureboot.lockstate" "locked"
 
-        for prop in $(resetprop | grep -oE 'ro.*.build.tags'); do
-            check_and_resetprop "$prop" "release-keys"
-        done
-        for prop in $(resetprop | grep -oE 'ro.*.build.type'); do
-            check_and_resetprop "$prop" "user"
-        done
-        check_and_resetprop "ro.build.type" "user"
-        check_and_resetprop "ro.build.tags" "release-keys"
-
         check_and_resetprop "sys.oem_unlock_allowed" "0"
         check_and_resetprop "ro.oem_unlock_supported" "0"
 
@@ -90,7 +82,25 @@ bootloader_properties_spoof() {
         match_and_resetprop "ro.boot.bootmode" "recovery" "unknown"
         match_and_resetprop "vendor.boot.bootmode" "recovery" "unknown"
     fi
+}
 
+build_type_spoof_as_user_release() {
+    build_type_spoof=$(get_config_var "build_type_spoof" "$CONFIG_FILE")
+    if [ "$build_type_spoof" = false ]; then
+        logowl "Skip build type properties spoofing"
+    elif [ "$build_type_spoof" = true ]; then
+        logowl "Spoof build type props"
+
+        for prop in $(resetprop | grep -oE 'ro.*.build.tags'); do
+            check_and_resetprop "$prop" "release-keys"
+        done
+        for prop in $(resetprop | grep -oE 'ro.*.build.type'); do
+            check_and_resetprop "$prop" "user"
+        done
+
+        check_and_resetprop "ro.build.type" "user"
+        check_and_resetprop "ro.build.tags" "release-keys"
+    fi
 }
 
 props_slayer() {
@@ -226,6 +236,7 @@ while [ "$(getprop sys.boot_completed)" != "1" ]; do
     sleep 1
 done
 props_slayer
+build_type_spoof_as_user_release
 vbmeta_modstate_update
 print_result
 print_line

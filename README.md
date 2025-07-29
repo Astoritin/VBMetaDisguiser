@@ -44,7 +44,8 @@ One of the purpose of writing this module is bypass the specific items in specif
 > boot=yes, boot=no, boot=20210205, the rule is same as vendor partition  
 - NOTICE: TrickyStore's configuration (`/data/adb/tricky_store/security_patch.txt`) has the highest priority, with VBMeta Disguiser's built-in configuration (`/data/adb/vbmetadisguiser/vbmeta.conf`) coming second. In order to avoid unnecessary interact, the value of VBMeta Disguiser config file (`/data/adb/vbmetadisguiser/vbmeta.conf`) related to security patch date properties will be ignored once detecting TrickyStore config file (`/data/adb/tricky_store/security_patch.txt`) exists.
 9. **`bootloader_props_spoof`**: Spoof bootloader properties as locked, disabled by default
-
+10. **`build_type_spoof`**: Spoof ROM build type as user/release, disabled by default
+- NOTICE: Enable this feature casually will cause system cannot boot in specified ROM!
 
 ## Logs
 Logs are saved in `/data/adb/vbmetadisguiser/logs`, as config file `/data/adb/vbmetadisguiser`.  
