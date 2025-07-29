@@ -296,6 +296,7 @@ append_config_var() {
         return 2
     fi
     if [ -z "$(grep_config_var "$key_name" "$CONFIG_FILE")" ]; then
+        echo "" >> "$CONFIG_FILE"
         update_config_var "$key_name" "$expected_value" "$CONFIG_FILE"
     fi
 }
