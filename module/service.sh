@@ -230,13 +230,13 @@ module_intro >> "$LOG_FILE"
 show_system_info
 print_line
 bootloader_properties_spoof
+build_type_spoof_as_user_release
 vbmeta_disguiser
 encryption_disguiser
 while [ "$(getprop sys.boot_completed)" != "1" ]; do
     sleep 1
 done
 props_slayer
-build_type_spoof_as_user_release
 vbmeta_modstate_update
 print_result
 print_line
