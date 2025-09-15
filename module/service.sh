@@ -107,17 +107,23 @@ build_type_spoof_as_user_release() {
 
 props_slayer() {
     props_slay=$(get_config_var "props_slay" "$CONFIG_FILE") || props_slay=false
-    print_var "props_slay"
+    restore_after_disable=$(get_config_var "restore_after_disable" "$CONFIG_FILE") || restore_after_disable=true
+    print_var "props_slay" "restore_after_disable"
 
     if [ "$props_slay" = false ]; then
         eco "Flag props_slay=false"
         if [ -f "$SLAIN_PROPS" ]; then
-            eco "$SLAIN_PROPS exists, restoring"
-            resetprop -p -f "$SLAIN_PROPS"
-            result_restore_props=$?
-            eco "resetprop -p -f $SLAIN_PROPS ($result_restore_props)"
-            if [ "$result_restore_props" -eq 0 ]; then
-                eco "Remove slain properties backup file"
+            eco "$SLAIN_PROPS exists"
+            if [ "$restore_after_disable" = true ]; then
+                resetprop -p -f "$SLAIN_PROPS"
+                result_restore_props=$?
+                eco "resetprop -p -f $SLAIN_PROPS ($result_restore_props)"
+                if [ "$result_restore_props" -eq 0 ]; then
+                    eco "Remove slain properties backup file"
+                    rm -f "$SLAIN_PROPS"
+                fi
+            else
+                eco "Skip restoring props"
                 rm -f "$SLAIN_PROPS"
             fi
         fi

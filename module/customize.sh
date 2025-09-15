@@ -55,6 +55,7 @@ update_config_var "security_patch_disguise" "$CONFIG_FILE" "false" "true"
 update_config_var "bootloader_props_spoof" "$CONFIG_FILE" "false" "true"
 update_config_var "build_type_spoof" "$CONFIG_FILE" "false" "true"
 update_config_var "build_type_spoof_in_post_fs_data" "$CONFIG_FILE" "false" "true"
+update_config_var "restore_after_disable" "$CONFIG_FILE" "true" "true"
 eco "Set permission"
 set_perm_recursive "$MODPATH" 0 0 0755 0644
 eco "Welcome to use $MOD_NAME!"
