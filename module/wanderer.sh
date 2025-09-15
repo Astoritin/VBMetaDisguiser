@@ -70,15 +70,15 @@ install_env_check() {
 
 }
 
-logowl_init() {
+eco_init() {
     LOG_DIR="$1"
 
     [ -z "$LOG_DIR" ] && return 1
-    [ ! -d "$LOG_DIR" ] && mkdir -p "$LOG_DIR" && logowl "Created $LOG_DIR"
+    [ ! -d "$LOG_DIR" ] && mkdir -p "$LOG_DIR" && eco "Create $LOG_DIR"
 
 }
 
-logowl_clean() {
+eco_clean() {
     log_dir="$1"
     files_max="$2"
     
@@ -94,7 +94,7 @@ logowl_clean() {
     return 0
 }
 
-logowl() {
+eco() {
     LOG_MSG="$1"
     LOG_MSG_LEVEL="$2"
     LOG_MSG_PREFIX=""
@@ -108,7 +108,7 @@ logowl() {
         "E") LOG_MSG_PREFIX="! ERROR: " ;;
         "F") LOG_MSG_PREFIX="× FATAL: " ;;
         ">") LOG_MSG_PREFIX="> " ;;
-        "*" ) LOG_MSG_PREFIX="* " ;; 
+        "*" ) LOG_MSG_PREFIX="* " ;;
         " ") LOG_MSG_PREFIX="  " ;;
         "-") LOG_MSG_PREFIX="" ;;
         *) if [ -n "$LOG_FILE" ]; then
@@ -153,7 +153,7 @@ print_line() {
     symbol=${2:--}
 
     line=$(printf "%-${length}s" | tr ' ' "$symbol")
-    logowl "$line" "-"
+    eco "$line" "-"
 
 }
 
@@ -171,10 +171,10 @@ get_config_var() {
     config_file=$2
 
     if [ -z "$key" ] || [ -z "$config_file" ]; then
-        logowl "Key or config file path is NOT defined" "W"
+        eco "Key or config file path is NOT defined" "W"
         return 1
     elif [ ! -f "$config_file" ]; then
-        logowl "$config_file is NOT a file" "W"
+        eco "$config_file is NOT a file" "W"
         return 2
     fi
     
@@ -229,11 +229,11 @@ get_config_var() {
 
     awk_exit_state=$?
     case $awk_exit_state in
-        1)  logowl "Failed to fetch value for $key (1)" "W"
+        1)  eco "Failed to fetch value for $key (1)" "W"
             return 5
             ;;
         0)  ;;
-        *)  logowl "Unexpected error ($awk_exit_state)" "W"
+        *)  eco "Unexpected error ($awk_exit_state)" "W"
             return 6
             ;;
     esac
@@ -241,30 +241,32 @@ get_config_var() {
     value=$(echo "$value" | dos2unix | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/'\''/'\\\\'\'''\''/g' | sed 's/[$;&|<>`"()]/\\&/g')
 
     if [ -n "$value" ]; then
-        logowl "Set $key=$value" ">"
         echo "$value"
         return 0
     else
-        logowl "Key $key does NOT exist in file $config_file" "W"
+        eco "Key $key does NOT exist in file $config_file" "W"
         return 1
     fi
 }
 
 update_config_var() {
     key_name="$1"
-    key_value="$2"
-    file_path="$3"
+    file_path="$2"
+    expected_value="$3"
+    append_mode="${4:-false}"
 
-    if [ -z "$key_name" ] || [ -z "$key_value" ] || [ -z "$file_path" ]; then
+    if [ -z "$key_name" ] || [ -z "$expected_value" ] || [ -z "$file_path" ]; then
         return 1
     elif [ ! -f "$file_path" ]; then
         return 2
     fi
 
     if grep -q "^${key_name}=" "$file_path"; then
-        sed -i "/^${key_name}=/c\\${key_name}=${key_value}" "$file_path"
+        [ "$append_mode" = true ] && return 0
+        sed -i "/^${key_name}=/c\\${key_name}=${expected_value}" "$file_path"
     else
-        printf '%s=%s\n' "$key_name" "$key_value" >> "$file_path"
+        [ -n "$(tail -c1 "$file_path")" ] && echo >> "$file_path"
+        printf '%s=%s\n' "$key_name" "$expected_value" >> "$file_path"
     fi
 
     result_update_value=$?
@@ -285,27 +287,29 @@ remove_config_var() {
     return "$?"
 }
 
-append_config_var() {
-    key_name="$1"
-    file_path="$2"
-    expected_value="$3"
-    
-    if [ -z "$key_name" ] || [ -z "$file_path" ]; then
-        return 1
-    elif [ ! -f "$file_path" ]; then
-        return 2
-    fi
-    if [ -z "$(grep_config_var "$key_name" "$CONFIG_FILE")" ]; then
-        echo "" >> "$CONFIG_FILE"
-        update_config_var "$key_name" "$expected_value" "$CONFIG_FILE"
-    fi
+query_var() {
+
+    for var_name in "$@"; do
+        eval printf '%s=%s\\n' "$var_name" \"\$$var_name\"
+    done
+
+}
+
+print_var() {
+
+    [ $# -eq 0 ] && return 1
+
+    query_var "$@" | while IFS= read -r line || [ -n "$line" ]; do
+        eco "Verified $line" "*"
+    done
+
 }
 
 show_system_info() {
 
-    logowl "Device: $(getprop ro.product.brand) $(getprop ro.product.model) ($(getprop ro.product.device))"
-    logowl "OS: Android $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk)), $(getprop ro.product.cpu.abi | cut -d '-' -f1)"
-    logowl "Kernel: $(uname -r)"
+    eco "Device: $(getprop ro.product.brand) $(getprop ro.product.model) ($(getprop ro.product.device))"
+    eco "OS: Android $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk)), $(getprop ro.product.cpu.abi | cut -d '-' -f1)"
+    eco "Kernel: $(uname -r)"
 
 }
 
@@ -318,11 +322,26 @@ module_intro() {
 
     install_env_check
     print_line
-    logowl "$MOD_NAME"
-    logowl "By $MOD_AUTHOR"
-    logowl "Version: $MOD_VER"
-    logowl "Root: $ROOT_SOL_DETAIL"
+    eco "$MOD_NAME"
+    eco "By $MOD_AUTHOR"
+    eco "Version: $MOD_VER"
+    eco "Root: $ROOT_SOL_DETAIL"
     print_line
+
+}
+
+file_compare() {
+    file_a="$1"
+    file_b="$2"
+    
+    [ -z "$file_a" ] || [ ! -f "$file_a" ] && return 2
+    [ -z "$file_b" ] || [ ! -f "$file_b" ] && return 3
+    
+    hash_file_a=$(sha256sum "$file_a" | awk '{print $1}')
+    hash_file_b=$(sha256sum "$file_b" | awk '{print $1}')
+    
+    [ "$hash_file_a" = "$hash_file_b" ] && return 0
+    [ "$hash_file_a" != "$hash_file_b" ] && return 1
 
 }
 
@@ -352,33 +371,22 @@ extract() {
     calculated_hash="$(sha256sum "$file_path" | cut -d ' ' -f1)"
 
     if [ "$expected_hash" == "$calculated_hash" ]; then
-        logowl "Verified $file" >&1
+        eco "Verified $file" >&1
     else
         abort "! Failed to verify $file"
     fi
 }
 
-set_permission() {
+check_duplicate_items() {
 
-    chown $2:$3 $1 || return 1    
-    chmod $4 $1 || return 1
-    
-    selinux_content=$5
-    [ -z "$selinux_content" ] && selinux_content=u:object_r:system_file:s0
-    chcon $selinux_content $1 || return 1
+    itemd=$1
+    filed=$2
 
-}
-
-set_permission_recursive() {
-
-    find $1 -type d 2>/dev/null | while read dir; do
-        set_permission $dir $2 $3 $4 $6
-    done
-
-    find $1 -type f -o -type l 2>/dev/null | while read file; do
-        set_permission $file $2 $3 $5 $6
-    done
-
+    if grep -q "^$itemd$" "$filed"; then
+        return 1
+    else
+        return 0
+    fi
 }
 
 clean_duplicate_items() {
@@ -409,7 +417,7 @@ check_and_resetprop() {
     if [ "$prop_current_value" != "$prop_expect_value" ]; then
         resetprop "$prop_name" "$prop_expect_value"
         result_check_and_resetprop=$?
-        logowl "resetprop $prop_name $prop_expect_value ($result_check_and_resetprop)"
+        eco "resetprop $prop_name $prop_expect_value ($result_check_and_resetprop)"
     fi
 
 }
@@ -428,7 +436,7 @@ match_and_resetprop() {
     if echo "$prop_current_value" | grep -q "$prop_contains_keyword"; then
         resetprop "$prop_name" "$prop_expect_value"
         result_check_and_resetprop=$?
-        logowl "resetprop $prop_name $prop_expect_value ($result_check_and_resetprop)"
+        eco "resetprop $prop_name $prop_expect_value ($result_check_and_resetprop)"
     fi
 
 }

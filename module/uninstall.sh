@@ -1,4 +1,4 @@
-CONFIG_DIR="/data/adb/vbmetadisguiser"
+CONFIG_DIR="/data/adb/vbmeta_disguiser"
 SLAIN_PROPS="$CONFIG_DIR/slain_props.prop"
 
 [ -f "$SLAIN_PROPS" ] && resetprop -p -f "$SLAIN_PROPS"

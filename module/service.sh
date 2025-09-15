@@ -3,7 +3,7 @@ MODDIR=${0%/*}
 
 . "$MODDIR/wanderer.sh"
 
-CONFIG_DIR="/data/adb/vbmetadisguiser"
+CONFIG_DIR="/data/adb/vbmeta_disguiser"
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 
 LOG_DIR="$CONFIG_DIR/logs"
@@ -14,23 +14,15 @@ MOD_INTRO="Disguise VBMeta properties."
 SLAIN_PROPS="$CONFIG_DIR/slain_props.prop"
 TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
 
-avb_version="2.0"
-vbmeta_size="4096"
-boot_hash="00000000000000000000000000000000"
-
-props_slay=false
-props_list=""
-
-bootloader_props_spoof=false
-build_type_spoof=false
-
 vbmeta_disguiser() {
 
-    logowl "Disguise VBMeta partition props"
+    eco "Disguise VBMeta partition props"
 
-    avb_version=$(get_config_var "avb_version" "$CONFIG_FILE")
-    vbmeta_size=$(get_config_var "vbmeta_size" "$CONFIG_FILE")
-    boot_hash=$(get_config_var "boot_hash" "$CONFIG_FILE")
+    avb_version=$(get_config_var "avb_version" "$CONFIG_FILE") || avb_version="2.0"
+    vbmeta_size=$(get_config_var "vbmeta_size" "$CONFIG_FILE") || vbmeta_size="4096"
+    boot_hash=$(get_config_var "boot_hash" "$CONFIG_FILE") || boot_hash="00000000000000000000000000000000"
+
+    print_var "avb_version" "vbmeta_size" "boot_hash"
 
     resetprop "ro.boot.vbmeta.device_state" "locked"
     resetprop "ro.boot.vbmeta.hash_alg" "sha256"
@@ -40,21 +32,25 @@ vbmeta_disguiser() {
 }
 
 encryption_disguiser(){
-    crypto_state=$(get_config_var "crypto_state" "$CONFIG_FILE")
+    crypto_state=$(get_config_var "crypto_state" "$CONFIG_FILE") || return 1
 
-    logowl "Disguise Data partition props"
+    print_var "crypto_state"
+
+    eco "Disguise Data partition props"
 
     [ -n "$crypto_state" ] && resetprop -n "ro.crypto.state" "$crypto_state"
 
 }
 
 bootloader_properties_spoof() {
-    bootloader_props_spoof=$(get_config_var "bootloader_props_spoof" "$CONFIG_FILE")
+    bootloader_props_spoof=$(get_config_var "bootloader_props_spoof" "$CONFIG_FILE") || bootloader_props_spoof=false
+
+    print_var "bootloader_props_spoof"
 
     if [ "$bootloader_props_spoof" = false ]; then
-        logowl "Skip bootloader properties spoofing"
+        eco "Skip bootloader properties spoofing"
     elif [ "$bootloader_props_spoof" = true ]; then
-        logowl "Spoof bootloader props"
+        eco "Spoof bootloader props"
 
         check_and_resetprop "ro.debuggable" "0"
         check_and_resetprop "ro.force.debuggable" "0"
@@ -85,50 +81,58 @@ bootloader_properties_spoof() {
 }
 
 build_type_spoof_as_user_release() {
-    build_type_spoof=$(get_config_var "build_type_spoof" "$CONFIG_FILE")
+    build_type_spoof=$(get_config_var "build_type_spoof" "$CONFIG_FILE") || build_type_spoof=false
+    print_var "build_type_spoof"
     if [ "$build_type_spoof" = false ]; then
-        logowl "Skip build type properties spoofing"
+        eco "Skip build type properties spoofing"
     elif [ "$build_type_spoof" = true ]; then
-        logowl "Spoof build type props"
-
-        for prop in $(resetprop | grep -oE 'ro.*.build.tags'); do
-            check_and_resetprop "$prop" "release-keys"
-        done
-        for prop in $(resetprop | grep -oE 'ro.*.build.type'); do
-            check_and_resetprop "$prop" "user"
-        done
-
-        check_and_resetprop "ro.build.type" "user"
-        check_and_resetprop "ro.build.tags" "release-keys"
+        build_type_spoof_in_post_fs_data=$(get_config_var "build_type_spoof_in_post_fs_data" "$CONFIG_FILE")
+        print_var "build_type_spoof_in_post_fs_data"
+        if [ "$build_type_spoof_in_post_fs_data" = false ]; then
+            eco "Spoof build type props"
+            for prop in $(resetprop | grep -oE 'ro.*.build.tags'); do
+                check_and_resetprop "$prop" "release-keys"
+            done
+            for prop in $(resetprop | grep -oE 'ro.*.build.type'); do
+                check_and_resetprop "$prop" "user"
+            done
+            check_and_resetprop "ro.build.type" "user"
+            check_and_resetprop "ro.build.tags" "release-keys"
+        elif [ "$build_type_spoof_in_post_fs_data" = true ]; then
+            eco "Stop spoofing build type in service stage"
+            return 1
+        fi
     fi
 }
 
 props_slayer() {
-    props_slay=$(get_config_var "props_slay" "$CONFIG_FILE")
+    props_slay=$(get_config_var "props_slay" "$CONFIG_FILE") || props_slay=false
+    print_var "props_slay"
 
     if [ "$props_slay" = false ]; then
-        logowl "Flag props_slay=false"
+        eco "Flag props_slay=false"
         if [ -f "$SLAIN_PROPS" ]; then
-            logowl "$SLAIN_PROPS exists, restoring"
+            eco "$SLAIN_PROPS exists, restoring"
             resetprop -p -f "$SLAIN_PROPS"
             result_restore_props=$?
-            logowl "resetprop -p -f $SLAIN_PROPS ($result_restore_props)"
+            eco "resetprop -p -f $SLAIN_PROPS ($result_restore_props)"
             if [ "$result_restore_props" -eq 0 ]; then
-                logowl "Remove slain properties backup file"
+                eco "Remove slain properties backup file"
                 rm -f "$SLAIN_PROPS"
             fi
         fi
         return 0
     elif [ "$props_slay" = true ]; then
-        logowl "Slay props"
-        props_list=$(get_config_var "props_list" "$CONFIG_FILE")
+        eco "Slay props"
+        props_list=$(get_config_var "props_list" "$CONFIG_FILE") || props_list=""
+        print_var "props_list"
         for props_r in $props_list; do
             props_r_value="$(getprop $props_r)"
             if [ -n "$props_r_value" ]; then
                 echo "${props_r}=$(getprop $props_r)" >> "$SLAIN_PROPS"
                 resetprop -p -d $props_r
                 result_slay_prop=$?
-                logowl "resetprop -p -d $props_r ($result_slay_prop)"
+                eco "resetprop -p -d $props_r ($result_slay_prop)"
             fi
         done
     fi
@@ -138,7 +142,7 @@ props_slayer() {
 vbmeta_modstate_update() {
     DESC_TMPDIR="$CONFIG_DIR/vd_desc.tmp"
 
-    logowl "Update module description"
+    eco "Update module description"
 
     get_prop() { getprop "$1" 2>/dev/null || echo "-"; }
     is_empty_or_zero() { [ -z "$1" ] || echo "$1" | grep -qE '^0+$'; }
@@ -179,7 +183,7 @@ vbmeta_modstate_update() {
 
     desc_parts=$(awk 'ORS=", "' "$DESC_TMPDIR" | sed 's/,[[:space:]]*$//')
     DESCRIPTION="[$desc_parts] $MOD_INTRO"
-    update_config_var "description" "$DESCRIPTION" "$MODULE_PROP"
+    update_config_var "description" "$MODULE_PROP" "$DESCRIPTION" 
     rm -f "$DESC_TMPDIR"
 
 }
@@ -189,10 +193,10 @@ print_prop() {
     prop_current_value=$(getprop "$prop_name")
 
     if [ -n "$prop_current_value" ]; then
-        logowl "$prop_name=$prop_current_value"
+        eco "$prop_name=$prop_current_value"
         return 0
     elif [ -z "$prop_current_value" ]; then
-        logowl "$prop_name="
+        eco "$prop_name="
         return 1
     fi
 
@@ -200,23 +204,23 @@ print_prop() {
 
 print_result() {
 
-    logowl "Security patch date properties" ">"
+    eco "Security patch date properties" ">"
     print_prop "ro.build.version.security_patch"
     print_prop "ro.system.build.security_patch"
     print_prop "ro.vendor.build.security_patch"
-    logowl "VBMeta partition properties" ">"
+    eco "VBMeta partition properties" ">"
     print_prop "ro.boot.vbmeta.device_state"
     print_prop "ro.boot.vbmeta.avb_version"
     print_prop "ro.boot.vbmeta.hash_alg"
     print_prop "ro.boot.vbmeta.size"
     print_prop "ro.boot.vbmeta.digest"
-    logowl "Data partition properties" ">"
+    eco "Data partition properties" ">"
     print_prop "ro.crypto.state"
 
 }
 
 if [ "$FROM_ACTION" = true ]; then
-    logowl "Process from action/open button"
+    eco "Process from action/open button"
     bootloader_properties_spoof
     vbmeta_disguiser
     encryption_disguiser
@@ -225,7 +229,7 @@ if [ "$FROM_ACTION" = true ]; then
     return 0
 fi
 
-logowl_init "$LOG_DIR"
+eco_init "$LOG_DIR"
 module_intro >> "$LOG_FILE"
 show_system_info
 print_line
@@ -240,5 +244,5 @@ props_slayer
 vbmeta_modstate_update
 print_result
 print_line
-logowl "Case closed!"
-logowl_clean "$LOG_DIR" 20
+eco "Case closed!"
+eco_clean "$LOG_DIR" 20

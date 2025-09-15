@@ -1,10 +1,10 @@
 #!/system/bin/sh
 MODDIR=${0%/*}
 
-CONFIG_DIR="/data/adb/vbmetadisguiser"
+CONFIG_DIR="/data/adb/vbmeta_disguiser"
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 
-MOD_INTRO="Disguise VBMeta properties."
+MOD_INTRO="Disguise VBMeta properties"
 MODULE_PROP="$MODDIR/module.prop"
 SEPARATE_LINE="----------------------------------------"
 
