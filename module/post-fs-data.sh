@@ -260,37 +260,6 @@ install_recovery_script_slayer() {
     fi
 }
 
-build_type_spoof_as_user_release() {
-    build_type_spoof=$(get_config_var "build_type_spoof" "$CONFIG_FILE") || build_type_spoof=false
-    print_var "build_type_spoof"
-    if [ "$build_type_spoof" = false ]; then
-        eco "Skip build type properties spoofing"
-    elif [ "$build_type_spoof" = true ]; then
-        build_type_spoof_in_post_fs_data=$(get_config_var "build_type_spoof_in_post_fs_data" "$CONFIG_FILE")
-        print_var "build_type_spoof_in_post_fs_data"
-        if [ "$build_type_spoof_in_post_fs_data" = false ]; then
-            eco "Spoof build type props"
-            for prop in $(resetprop | grep -oE 'ro.*.build.tags'); do
-                check_and_resetprop "$prop" "release-keys"
-            done
-            for prop in $(resetprop | grep -oE 'ro.*.build.type'); do
-                check_and_resetprop "$prop" "user"
-            done
-            check_and_resetprop "ro.build.type" "user"
-            check_and_resetprop "ro.build.tags" "release-keys"
-            build_fingerprint=$(resetprop "ro.build.fingerprint")
-            eco "fingerprint: $build_fingerprint"
-            build_fingerprint=$(printf '%s' "$build_fingerprint" | sed -e 's/userdebug/user/g' -e 's/test-keys/release-keys/g')
-            eco "fingerprint: $build_fingerprint"
-            resetprop -n "ro.build.fingerprint" "$build_fingerprint"
-            eco "resetprop -n ro.build.fingerprint $build_fingerprint"
-        elif [ "$build_type_spoof_in_post_fs_data" = true ]; then
-            eco "Stop spoofing build type in service stage"
-            return 1
-        fi
-    fi
-}
-
 [ -d "$LOG_DIR" ] && eco_clean "$LOG_DIR"
 eco_init "$LOG_DIR"
 module_intro >> "$LOG_FILE"
