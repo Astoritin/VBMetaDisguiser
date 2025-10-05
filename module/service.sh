@@ -102,10 +102,13 @@ build_type_spoof_as_user_release() {
         if [ -n "$custom_build_fingerprint" ]; then
             check_and_resetprop "ro.build.fingerprint" "$custom_build_fingerprint"
         else
-            build_fingerprint=$(resetprop | grep -oE "ro.*.build.fingerprint" | sed -e 's/userdebug/user/g' -e 's/test-keys/release-keys/g')
+            build_fingerprint=$(resetprop | grep -oE 'ro.*.build.fingerprint')
+            print_var "build_fingerprint"
+            build_fingerprint=$(printf '%s' "$build_fingerprint" | sed -e 's/userdebug/user/g' -e 's/test-keys/release-keys/g')
+            print_var "build_fingerprint"
             check_and_resetprop "ro.build.fingerprint" "$build_fingerprint"
         fi
-        for prop in $(resetprop | grep -oE "ro.*.build.fingerprint"); do
+        for prop in $(resetprop | grep -oE 'ro.*.build.fingerprint'); do
             eco "Process fingerprint prop: $prop"
             build_fingerprint=$(printf '%s' "$prop" | sed -e 's/userdebug/user/g' -e 's/test-keys/release-keys/g')
             if [ -n "$custom_build_fingerprint" ]; then
