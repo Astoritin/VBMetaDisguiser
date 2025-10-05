@@ -98,6 +98,12 @@ build_type_spoof_as_user_release() {
             done
             check_and_resetprop "ro.build.type" "user"
             check_and_resetprop "ro.build.tags" "release-keys"
+            build_fingerprint=$(resetprop "ro.build.fingerprint")
+            eco "fingerprint: $build_fingerprint"
+            build_fingerprint=$(printf %s \"$build_fingerprint\" | sed -e \"s/userdebug/user/g\" -e \"s/test-keys/release-keys/g\")
+            eco "fingerprint: $build_fingerprint"
+            resetprop -n "ro.build.fingerprint" "$build_fingerprint"
+            eco "resetprop -n ro.build.fingerprint $build_fingerprint"
         elif [ "$build_type_spoof_in_post_fs_data" = true ]; then
             eco "Stop spoofing build type in service stage"
             return 1
@@ -239,13 +245,13 @@ eco_init "$LOG_DIR"
 module_intro >> "$LOG_FILE"
 show_system_info
 print_line
+while [ "$(getprop sys.boot_completed)" != "1" ]; do
+    sleep 1
+done
 bootloader_properties_spoof
 build_type_spoof_as_user_release
 vbmeta_disguiser
 encryption_disguiser
-while [ "$(getprop sys.boot_completed)" != "1" ]; do
-    sleep 1
-done
 props_slayer
 vbmeta_modstate_update
 print_result
