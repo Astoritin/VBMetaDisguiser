@@ -100,7 +100,7 @@ build_type_spoof_as_user_release() {
             check_and_resetprop "ro.build.tags" "release-keys"
             build_fingerprint=$(resetprop "ro.build.fingerprint")
             eco "fingerprint: $build_fingerprint"
-            build_fingerprint=$(printf %s \"$build_fingerprint\" | sed -e \"s/userdebug/user/g\" -e \"s/test-keys/release-keys/g\")
+            build_fingerprint=$(printf '%s' "$build_fingerprint" | sed -e 's/userdebug/user/g' -e 's/test-keys/release-keys/g')
             eco "fingerprint: $build_fingerprint"
             resetprop -n "ro.build.fingerprint" "$build_fingerprint"
             eco "resetprop -n ro.build.fingerprint $build_fingerprint"
