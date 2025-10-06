@@ -70,91 +70,6 @@ install_env_check() {
 
 }
 
-eco_init() {
-    LOG_DIR="$1"
-
-    [ -z "$LOG_DIR" ] && return 1
-    [ ! -d "$LOG_DIR" ] && mkdir -p "$LOG_DIR" && eco "Create $LOG_DIR"
-
-}
-
-eco_clean() {
-    log_dir="$1"
-    files_max="$2"
-    
-    [ -z "$log_dir" ] || [ ! -d "$log_dir" ] && return 1
-    [ -z "$files_max" ] && files_max=20
-
-    files_count=$(ls -1 "$log_dir" | wc -l)
-    if [ "$files_count" -gt "$files_max" ]; then
-        find "$log_dir" -maxdepth 1 -type f -exec rm -f {} +
-    fi
-    return 0
-}
-
-eco() {
-    LOG_MSG="$1"
-    LOG_MSG_LEVEL="$2"
-    LOG_MSG_PREFIX=""
-    SEPARATE_LINE="---------------------------------------------"
-    TIMESTAMP_FORMAT="%02d:%02d:%02d:%03d | "
-
-    [ -z "$LOG_MSG" ] && return 1
-
-    case "$LOG_MSG_LEVEL" in
-        "W") LOG_MSG_PREFIX="? Warn: " ;;
-        "E") LOG_MSG_PREFIX="! ERROR: " ;;
-        "F") LOG_MSG_PREFIX="× FATAL: " ;;
-        ">") LOG_MSG_PREFIX="> " ;;
-        "*" ) LOG_MSG_PREFIX="* " ;;
-        " ") LOG_MSG_PREFIX="  " ;;
-        "-") LOG_MSG_PREFIX="" ;;
-        *) if [ -n "$LOG_FILE" ]; then
-            LOG_MSG_PREFIX=""
-            else
-            LOG_MSG_PREFIX="- "
-            fi
-            ;;
-    esac
-
-    if [ -n "$LOG_FILE" ]; then
-        TIME_STAMP="$(date +"%Y-%m-%d %H:%M:%S.%3N") | "
-        if [ "$LOG_MSG_LEVEL" = "ERROR" ] || [ "$LOG_MSG_LEVEL" = "FATAL" ]; then
-            echo "$SEPARATE_LINE" >> "$LOG_FILE"
-            echo "${TIME_STAMP}${LOG_MSG_PREFIX}${LOG_MSG}" >> "$LOG_FILE"
-            echo "$SEPARATE_LINE" >> "$LOG_FILE"
-        elif [ "$LOG_MSG_LEVEL" = "-" ]; then
-            echo "${LOG_MSG}" >> "$LOG_FILE"
-        else
-            echo "${TIME_STAMP}${LOG_MSG_PREFIX}${LOG_MSG}" >> "$LOG_FILE"
-        fi
-    else
-        if command -v ui_print >/dev/null 2>&1; then
-            if [ "$LOG_MSG_LEVEL" = "ERROR" ] || [ "$LOG_MSG_LEVEL" = "FATAL" ]; then
-                ui_print "$SEPARATE_LINE"
-                ui_print "${LOG_MSG_PREFIX}${LOG_MSG}"
-                ui_print "$SEPARATE_LINE"
-            elif [ "$LOG_MSG_LEVEL" = "-" ]; then
-                ui_print "$LOG_MSG"
-            else
-                ui_print "${LOG_MSG_PREFIX}${LOG_MSG}"
-            fi
-        else
-            echo "${LOG_MSG_PREFIX}${LOG_MSG}"
-        fi
-    fi
-}
-
-print_line() {
-
-    length=${1:-74}
-    symbol=${2:--}
-
-    line=$(printf "%-${length}s" | tr ' ' "$symbol")
-    eco "$line" "-"
-
-}
-
 grep_config_var() {
     regex="s/^$1=//p"
     config_file="$2"
@@ -169,10 +84,8 @@ get_config_var() {
     config_file=$2
 
     if [ -z "$key" ] || [ -z "$config_file" ]; then
-        eco "Key or config file path is NOT defined" "W"
         return 1
     elif [ ! -f "$config_file" ]; then
-        eco "$config_file is NOT a file" "W"
         return 2
     fi
     
@@ -227,12 +140,10 @@ get_config_var() {
 
     awk_exit_state=$?
     case $awk_exit_state in
-        1)  eco "Failed to fetch value for $key (1)" "W"
-            return 5
+        1)  return 5
             ;;
         0)  ;;
-        *)  eco "Unexpected error ($awk_exit_state)" "W"
-            return 6
+        *)  return 6
             ;;
     esac
 
@@ -242,7 +153,6 @@ get_config_var() {
         echo "$value"
         return 0
     else
-        eco "Key $key does NOT exist in file $config_file" "W"
         return 1
     fi
 }
@@ -285,46 +195,11 @@ remove_config_var() {
     return "$?"
 }
 
-query_var() {
-
-    for var_name in "$@"; do
-        eval printf '%s=%s\\n' "$var_name" \"\$$var_name\"
-    done
-
-}
-
-print_var() {
-
-    [ $# -eq 0 ] && return 1
-
-    query_var "$@" | while IFS= read -r line || [ -n "$line" ]; do
-        eco "Verified $line" "*"
-    done
-
-}
-
 show_system_info() {
 
-    eco "Device: $(getprop ro.product.brand) $(getprop ro.product.model) ($(getprop ro.product.device))"
-    eco "OS: Android $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk)), $(getprop ro.product.cpu.abi | cut -d '-' -f1)"
-    eco "Kernel: $(uname -r)"
-
-}
-
-module_intro() {
-
-    MODULE_PROP="$MODDIR/module.prop"
-    MOD_NAME="$(grep_config_var "name" "$MODULE_PROP")"
-    MOD_AUTHOR="$(grep_config_var "author" "$MODULE_PROP")"
-    MOD_VER="$(grep_config_var "version" "$MODULE_PROP") ($(grep_config_var "versionCode" "$MODULE_PROP"))"
-
-    install_env_check
-    print_line
-    eco "$MOD_NAME"
-    eco "By $MOD_AUTHOR"
-    eco "Version: $MOD_VER"
-    eco "Root: $ROOT_SOL_DETAIL"
-    print_line
+    ui_print "- Device: $(getprop ro.product.brand) $(getprop ro.product.model) ($(getprop ro.product.device))"
+    ui_print "- OS: Android $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk)), $(getprop ro.product.cpu.abi | cut -d '-' -f1)"
+    ui_print "- Kernel: $(uname -r)"
 
 }
 
@@ -369,7 +244,7 @@ extract() {
     calculated_hash="$(sha256sum "$file_path" | cut -d ' ' -f1)"
 
     if [ "$expected_hash" == "$calculated_hash" ]; then
-        eco "Verified $file" >&1
+        ui_print "- Verified $file" >&1
     else
         abort "! Failed to verify $file"
     fi
@@ -414,8 +289,6 @@ check_and_resetprop() {
     
     if [ "$prop_current_value" != "$prop_expect_value" ]; then
         resetprop "$prop_name" "$prop_expect_value"
-        result_check_and_resetprop=$?
-        eco "resetprop $prop_name $prop_expect_value ($result_check_and_resetprop)"
     fi
 
 }
@@ -433,8 +306,6 @@ match_and_resetprop() {
     
     if echo "$prop_current_value" | grep -q "$prop_contains_keyword"; then
         resetprop "$prop_name" "$prop_expect_value"
-        result_check_and_resetprop=$?
-        eco "resetprop $prop_name $prop_expect_value ($result_check_and_resetprop)"
     fi
 
 }

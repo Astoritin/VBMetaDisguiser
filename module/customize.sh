@@ -5,7 +5,6 @@ CONFIG_DIR_OLD="/data/adb/vbmetadisguiser"
 CONFIG_DIR="/data/adb/vbmeta_disguiser"
 
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
-LOG_DIR="$CONFIG_DIR/logs"
 
 MOD_UPDATE_PATH="$(dirname "$MODPATH")"
 MOD_PATH="${MOD_UPDATE_PATH%_update}"
@@ -26,18 +25,14 @@ fi
 
 [ -d "$CONFIG_DIR_OLD" ] && mv "$CONFIG_DIR_OLD" "$CONFIG_DIR"
 
-eco "Setting up $MOD_NAME"
-eco "Version: $MOD_VER"
-eco_init "$LOG_DIR"
+ui_print "- Setting up $MOD_NAME"
+ui_print "- Version: $MOD_VER"
 show_system_info
 install_env_check
-eco "Installing from $ROOT_SOL app"
-eco "Root: $ROOT_SOL_DETAIL"
-eco "[DEBUG] MODPATH: $MODPATH"
-eco "[DEBUG] MOD_UPDATE_PATH: $MOD_UPDATE_PATH"
-eco "[DEBUG] MOD_PATH: $MOD_PATH"
-[ -d "$MOD_PATH_OLD" ] && rm -f "$MOD_PATH_OLD/update" && eco "[DEBUG] Remove $MOD_PATH_OLD/update"
-[ -d "$MOD_PATH_OLD" ] && touch "$MOD_PATH_OLD/remove" && eco "[DEBUG] Create $MOD_PATH_OLD/remove"
+ui_print "- Installing from $ROOT_SOL app"
+ui_print "- Root: $ROOT_SOL_DETAIL"
+[ -d "$MOD_PATH_OLD" ] && rm -f "$MOD_PATH_OLD/update"
+[ -d "$MOD_PATH_OLD" ] && touch "$MOD_PATH_OLD/remove"
 extract "customize.sh" "$TMPDIR"
 extract "wanderer.sh"
 extract "action.sh"
@@ -58,6 +53,6 @@ update_config_var "build_type_spoof" "$CONFIG_FILE" "false" "true"
 update_config_var "restore_after_disable" "$CONFIG_FILE" "true" "true"
 update_config_var "custom_build_fingerprint" "$CONFIG_FILE" "" "true"
 update_config_var "outdated_pi_props_slay" "$CONFIG_FILE" "false" "true"
-eco "Setting permission"
+ui_print "- Setting permission"
 set_perm_recursive "$MODPATH" 0 0 0755 0644
-eco "Welcome to use $MOD_NAME!"
+ui_print "- Welcome to use $MOD_NAME!"
