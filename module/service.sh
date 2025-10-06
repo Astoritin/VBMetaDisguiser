@@ -82,10 +82,12 @@ bootloader_properties_spoof() {
 
 build_type_spoof_as_user_release() {
     build_type_spoof=$(get_config_var "build_type_spoof" "$CONFIG_FILE") || build_type_spoof=false
-    custom_build_fingerprint=$(get_config_var "custom_build_fingerprint" "$CONFIG_FILE") 
+    custom_build_fingerprint=$(get_config_var "custom_build_fingerprint" "$CONFIG_FILE")
     print_var "build_type_spoof" "custom_build_fingerprint"
+
     if [ "$build_type_spoof" = false ]; then
         eco "Skip build type properties spoofing"
+        return 0
     elif [ "$build_type_spoof" = true ]; then
         eco "Spoof build type props"
         
@@ -158,6 +160,25 @@ props_slayer() {
         done
     fi
     clean_duplicate_items "$SLAIN_PROPS"
+}
+
+outdated_pihooks_pixelprops_slayer() {
+    outdated_pi_props_slay=$(get_config_var "outdated_pi_props_slay" "$CONFIG_FILE") || outdated_pi_props_slay=false
+
+    if [ "$outdated_pi_props_slay" = false ]; then
+        eco "Skip Outdated Pihooks/Pixelprops properties slaying"
+        return 0
+    elif [ "$outdated_pi_props_slay" = true ]; then
+        eco "Slay outdated Pihooks/Pixelprops properties"
+        props_list=$(resetprop | grep -E "(pihook|pixelprops|spoof\.gms|entryhooks)" | sed -r "s/^\[([^]]+)\].*/\1/")
+        print_var "props_list"
+        for prop in $props_list; do
+            resetprop -p -d "$prop"
+            result_slay_prop=$?
+            eco "resetprop -p -d $prop ($result_slay_prop)"
+        done
+    fi
+
 }
 
 vbmeta_modstate_update() {
