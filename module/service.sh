@@ -284,6 +284,7 @@ build_type_spoof_as_user_release
 vbmeta_disguiser
 encryption_disguiser
 props_slayer
+outdated_pihooks_pixelprops_slayer
 vbmeta_modstate_update
 print_result
 print_line
