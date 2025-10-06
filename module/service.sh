@@ -150,9 +150,9 @@ props_slayer() {
         props_list=$(get_config_var "props_list" "$CONFIG_FILE") || props_list=""
         print_var "props_list"
         for props_r in $props_list; do
-            props_r_value="$(getprop $props_r)"
+            props_r_value="$(resetprop $props_r)"
             if [ -n "$props_r_value" ]; then
-                echo "${props_r}=$(getprop $props_r)" >> "$SLAIN_PROPS"
+                echo "${props_r}=${props_r_value}" >> "$SLAIN_PROPS"
                 resetprop -p -d $props_r
                 result_slay_prop=$?
                 eco "resetprop -p -d $props_r ($result_slay_prop)"
