@@ -197,9 +197,9 @@ remove_config_var() {
 
 show_system_info() {
 
-    ui_print "- Device: $(getprop ro.product.brand) $(getprop ro.product.model) ($(getprop ro.product.device))"
-    ui_print "- OS: Android $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk)), $(getprop ro.product.cpu.abi | cut -d '-' -f1)"
-    ui_print "- Kernel: $(uname -r)"
+    echo "- Device: $(getprop ro.product.brand) $(getprop ro.product.model) ($(getprop ro.product.device))"
+    echo "- OS: Android $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk)), $(getprop ro.product.cpu.abi | cut -d '-' -f1)"
+    echo "- Kernel: $(uname -r)"
 
 }
 
@@ -244,7 +244,7 @@ extract() {
     calculated_hash="$(sha256sum "$file_path" | cut -d ' ' -f1)"
 
     if [ "$expected_hash" == "$calculated_hash" ]; then
-        ui_print "- Verified $file" >&1
+        echo "- Verified $file" >&1
     else
         abort "! Failed to verify $file"
     fi

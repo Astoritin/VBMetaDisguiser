@@ -9,6 +9,7 @@ CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
 
 date_format_convert() {
+
     date_to_convert=$1
     [ -z "$date_to_convert" ] && return 1
 
@@ -52,9 +53,11 @@ date_format_convert() {
     else
         return 1
     fi
+
 }
 
 ts_sp_quick_set() {
+
     date_qs=$1
 
     [ -z "$date_qs" ] && return 1
@@ -65,6 +68,7 @@ ts_sp_quick_set() {
 }
 
 ts_sp_partition_set() {
+
     partition_state=$1
     partition_date=$2
 
@@ -78,17 +82,23 @@ ts_sp_partition_set() {
             check_and_resetprop "ro.system.build.security_patch" "$partition_state"
         fi
     fi
+
 }
 
 ts_sp_config_simple() {
+
     ts_date=$(grep -v '^#' "$TRICKY_STORE_CONFIG_FILE" | grep -Eo '[0-9]+' | head -n 1)
+
     ts_date=$(date_format_convert "$ts_date")
+
     if [ -n "$ts_date" ]; then
         ts_sp_quick_set "$ts_date"
     fi
+
 }
 
 ts_sp_config_advanced() {
+
     ts_all=$(get_config_var "all" "$TRICKY_STORE_CONFIG_FILE")
     
     if [ -n "$ts_all" ]; then
@@ -109,9 +119,11 @@ ts_sp_config_advanced() {
 
     ts_vendor=$(get_config_var "vendor" "$TRICKY_STORE_CONFIG_FILE")
     ts_sp_partition_set "$ts_vendor" "$ts_system"
+
 }
 
 security_patch_info_disguiser() {
+
     security_patch_disguise=$(get_config_var "security_patch_disguise" "$CONFIG_FILE") || security_patch_disguise=false
 
     if [ -z "$security_patch_disguise" ]; then
@@ -129,12 +141,15 @@ security_patch_info_disguiser() {
         elif [ ! -f "$TRICKY_STORE_CONFIG_FILE" ] && [ -f "$CONFIG_FILE" ]; then
             TRICKY_STORE_CONFIG_FILE="$CONFIG_FILE"
             ts_sp_config_advanced
+        else
+            return 1
         fi
     fi
 
 }
 
 mirror_make_node() {
+
     node_path=$1
 
     if [ -z "$node_path" ]; then
@@ -162,9 +177,11 @@ mirror_make_node() {
     else
         return 0
     fi
+
 }
 
 check_make_node_support() {
+
     if [ "$DETECT_KSU" = true ] || [ "$DETECT_APATCH" = true ]; then
         MN_SUPPORT=true
     elif [ "$DETECT_MAGISK" = true ]; then
@@ -174,6 +191,7 @@ check_make_node_support() {
             MN_SUPPORT=false
         fi
     fi
+
 }
 
 install_recovery_script_slayer() {
@@ -188,6 +206,7 @@ install_recovery_script_slayer() {
 /system/vendor/etc/recovery-resource.dat"
 
     install_recovery_slay=$(get_config_var "install_recovery_slay" "$CONFIG_FILE") || install_recovery_slay=false
+    print_var "install_recovery_slay"
     if [ -z "$install_recovery_slay" ]; then
         return 1
     elif [ "$install_recovery_slay" = false ]; then
@@ -200,11 +219,12 @@ install_recovery_script_slayer() {
                     mirror_make_node "$irsh"
                 fi
             done
+        else
+            return 1
         fi
     fi
 }
 
 [ -n "$MODDIR" ] && rm -rf "$MODDIR/system"
-install_env_check
 security_patch_info_disguiser
 install_recovery_script_slayer

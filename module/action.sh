@@ -27,20 +27,19 @@ me.zhanghai.android.files/me.zhanghai.android.files.filelist.FileListActivity
 
 echo "$SEPARATE_LINE"
 echo "- VBMeta Disguiser"
-echo "- By Astoritin"
+echo "- By Astoritin Ambrosius"
 echo "$SEPARATE_LINE"
 echo "- $MOD_INTRO"
 echo "$SEPARATE_LINE"
-echo "- Opening config dir"
-echo "- and update VBMeta Properties manually"
+echo "- Open config dir and update VBMeta properties manually"
 echo "$SEPARATE_LINE"
 echo "- If nothing happened after case closed"
 echo "- that means not any available root"
 echo "- file explorer is found on your device"
 echo "- Anyway, you can open config dir manually"
-echo "- with your favourite Root file manager"
+echo "- with root file explorer you preferred"
 echo "$SEPARATE_LINE"
-sleep 1
+sleep 2
 
 IFS=$'\n'
 

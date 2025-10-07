@@ -7,6 +7,7 @@ CONFIG_DIR="/data/adb/vbmeta_disguiser"
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
 
 MOD_INTRO="Disguise VBMeta properties."
+MODULE_PROP="$MODDIR/module.prop"
 
 SLAIN_PROPS="$CONFIG_DIR/slain_props.prop"
 TRICKY_STORE_CONFIG_FILE="/data/adb/tricky_store/security_patch.txt"
@@ -22,15 +23,21 @@ vbmeta_disguiser() {
     [ -n "$boot_hash" ] && resetprop "ro.boot.vbmeta.digest" "$boot_hash"
     resetprop "ro.boot.vbmeta.size" "$vbmeta_size"
     resetprop "ro.boot.vbmeta.avb_version" "$avb_version"
+
 }
 
 encryption_disguiser(){
+
     crypto_state=$(get_config_var "crypto_state" "$CONFIG_FILE") || return 1
+
     [ -n "$crypto_state" ] && resetprop -n "ro.crypto.state" "$crypto_state"
+
 }
 
 bootloader_properties_spoof() {
+
     bootloader_props_spoof=$(get_config_var "bootloader_props_spoof" "$CONFIG_FILE") || bootloader_props_spoof=false
+
     if [ "$bootloader_props_spoof" = false ]; then
         return 0
     elif [ "$bootloader_props_spoof" = true ]; then
@@ -60,16 +67,17 @@ bootloader_properties_spoof() {
         match_and_resetprop "ro.boot.bootmode" "recovery" "unknown"
         match_and_resetprop "vendor.boot.bootmode" "recovery" "unknown"
     fi
+
 }
 
 build_type_spoof_as_user_release() {
+
     build_type_spoof=$(get_config_var "build_type_spoof" "$CONFIG_FILE") || build_type_spoof=false
     custom_build_fingerprint=$(get_config_var "custom_build_fingerprint" "$CONFIG_FILE")
 
     if [ "$build_type_spoof" = false ]; then
         return 0
-    elif [ "$build_type_spoof" = true ]; then
-        
+    elif [ "$build_type_spoof" = true ]; then        
         check_and_resetprop "ro.build.type" "user"
         for prop in $(resetprop | grep -oE 'ro.*.build.tags'); do
             check_and_resetprop "$prop" "release-keys"
@@ -83,8 +91,7 @@ build_type_spoof_as_user_release() {
         if [ -n "$custom_build_fingerprint" ]; then
             check_and_resetprop "ro.build.fingerprint" "$custom_build_fingerprint"
         else
-            build_fingerprint=$(resetprop 'ro.build.fingerprint')
-            build_fingerprint=$(printf '%s' "$build_fingerprint" | sed -e 's/userdebug/user/g' -e 's/test-keys/release-keys/g')
+            build_fingerprint=$(resetprop 'ro.build.fingerprint' | sed -e 's/userdebug/user/g' -e 's/test-keys/release-keys/g')
             check_and_resetprop "ro.build.fingerprint" "$build_fingerprint"
         fi
         for prop in $(resetprop | grep -oE 'ro.*.build.fingerprint'); do
@@ -96,55 +103,59 @@ build_type_spoof_as_user_release() {
             fi
         done 
     fi
+
 }
 
 props_slayer() {
-    props_slay=$(get_config_var "props_slay" "$CONFIG_FILE") || props_slay=false
-    restore_after_disable=$(get_config_var "restore_after_disable" "$CONFIG_FILE") || restore_after_disable=true
 
-    if [ "$props_slay" = false ]; then
-        if [ -f "$SLAIN_PROPS" ]; then
-            if [ "$restore_after_disable" = true ]; then
-                resetprop -p -f "$SLAIN_PROPS"
-                result_restore_props=$?
-                if [ "$result_restore_props" -eq 0 ]; then
-                    rm -f "$SLAIN_PROPS"
-                fi
-            else
-                rm -f "$SLAIN_PROPS"
-            fi
+    props_list=$1
+
+    [ -z "$props_list" ] && return 1
+
+    for prop in $props_list; do
+        prop_value="$(resetprop "$prop")"
+        if [ -n "$prop_value" ]; then
+            echo "$prop=$prop_value" >> "$SLAIN_PROPS"
+            resetprop -p -d "$prop"
         fi
-        return 0
-    elif [ "$props_slay" = true ]; then
-        props_list=$(get_config_var "props_list" "$CONFIG_FILE") || props_list=""
-        for prop in $props_list; do
-            prop_value="$(resetprop $prop)"
-            if [ -n "$prop_value" ]; then
-                echo "${prop}=${prop_value}" >> "$SLAIN_PROPS"
-                resetprop -p -d $prop
-            fi
-        done
-    fi
-    clean_duplicate_items "$SLAIN_PROPS"
+    done
+
 }
 
-outdated_pihooks_pixelprops_slayer() {
+props_and_outdated_pihooks_pixelprops_slayer() {
+
+    props_slay=$(get_config_var "props_slay" "$CONFIG_FILE") || props_slay=false
+    restore_after_disable=$(get_config_var "restore_after_disable" "$CONFIG_FILE") || restore_after_disable=true
     outdated_pi_props_slay=$(get_config_var "outdated_pi_props_slay" "$CONFIG_FILE") || outdated_pi_props_slay=false
 
-    if [ "$outdated_pi_props_slay" = false ]; then
+    if [ "$props_slay" = false ] && [ "$outdated_pi_props_slay" = false ]; then
+        if [ -f "$SLAIN_PROPS" ] && [ "$restore_after_disable" = true ]; then
+            resetprop -p -f "$SLAIN_PROPS" && rm -f "$SLAIN_PROPS"
+        else
+            rm -f "$SLAIN_PROPS"
+        fi
         return 0
-    elif [ "$outdated_pi_props_slay" = true ]; then
-        props_list=$(resetprop | grep -E "(pihook|pixelprops|spoof\.gms|entryhooks|charlieprops)" | sed -r "s/^\[([^]]+)\].*/\1/")
-        for prop in $props_list; do
-            prop_value="$(resetprop $prop)"
-            echo "${prop}=${prop_value}" >> "$SLAIN_PROPS"
-            resetprop -p -d "$prop"
-        done
     fi
+
+    slay_list=""
+    pi_list=""
+    [ "$props_slay" = true ] && slay_list=$(get_config_var "props_list" "$CONFIG_FILE")
+    [ "$outdated_pi_props_slay" = true ] && pi_list=$(resetprop | grep -E "(pihook|pixelprops|spoof\.gms|entryhooks)" | sed -r "s/^\[([^]]+)\].*/\1/")
+
+    printf '%s\n' "$slay_list" >> "$CONFIG_DIR/slay_list.txt"
+    printf '%s\n' "$pi_list" >> "$CONFIG_DIR/pi_list.txt"
+
+    props_list=$(printf '%s%s%s\n' "$slay_list" "${slay_list:+$'\n'}" "$pi_list")
+    props_slayer "$props_list"
+
+    printf '%s\n' "$props_list" >> "$CONFIG_DIR/props_list.txt"
+
     clean_duplicate_items "$SLAIN_PROPS"
+
 }
 
 vbmeta_modstate_update() {
+
     DESC_TMPDIR="$CONFIG_DIR/vd_desc.tmp"
 
     get_prop() { getprop "$1" 2>/dev/null || echo "-"; }
@@ -192,22 +203,23 @@ vbmeta_modstate_update() {
 }
 
 if [ "$FROM_ACTION" = true ]; then
-    bootloader_properties_spoof
-    build_type_spoof_as_user_release
+    echo "- Executing from action/open button"
     vbmeta_disguiser
+    build_type_spoof_as_user_release
     encryption_disguiser
-    props_slayer
+    props_and_outdated_pihooks_pixelprops_slayer
     vbmeta_modstate_update
     return 0
 fi
 
+bootloader_properties_spoof
+vbmeta_disguiser
+
 while [ "$(getprop sys.boot_completed)" != "1" ]; do
     sleep 1
 done
-bootloader_properties_spoof
+
 build_type_spoof_as_user_release
-vbmeta_disguiser
 encryption_disguiser
-props_slayer
-outdated_pihooks_pixelprops_slayer
+props_and_outdated_pihooks_pixelprops_slayer
 vbmeta_modstate_update
