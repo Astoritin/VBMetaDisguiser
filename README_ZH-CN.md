@@ -11,7 +11,7 @@
 > 不过也说不准会有特定的软件也会根据这一点判断是不是已经解锁的设备，谁知道呢。  
 
 **主要原因是因为有些事情不想写多个模块去做，索性写了这么个有着各种奇怪功能的模块。**  
-  
+**其次，本人是Magisk用户，即使使用KernelSU系也不使用susfs。**
 **注意: 该模块只修改属性值，对于TEE/系统API返回的结果，请寻找其他模块**
 
 ## 步骤
@@ -46,11 +46,13 @@
 9. **`bootloader_props_spoof`**: 伪装 bootloader 属性值为锁定，默认禁用
 10. **`build_type_spoof`**: 伪装 ROM 的构建类别为 user/release，默认禁用
 - 注意：在某些 ROM 中，随意启用该功能将导致系统无法启动！
+11. **`custom_build_fingerprint`**: 自定义构建指纹，需要启用`build_type_spoof`
+12. **`outdated_pi_props_slay`**: 移除特定的过时的PiHooks/PixelProps的属性值，默认禁用。
 
 ## 日志
-日志被保存在 `/data/adb/vbmeta_disguiser/logs`，配置文件被保存在 `/data/adb/vbmeta_disguiser`。  
+配置文件被保存在 `/data/adb/vbmeta_disguiser`。   
   
-**反馈问题时，请直接打包整个vbmeta_disguiser文件夹后上传。**
+**日志自1.3.9起已全部移除，请在 Github 的 issue 页面提交问题后，由我本人视情况发log版模块，届时请直接打包整个vbmeta_disguiser文件夹后上传。**
 
 ### 注意
 1. 推荐在 `/data/adb/vbmeta_disguiser/vbmeta.conf` 中仅保存键值对的形式 (即键名=键值)。虽然不推荐，你可以用 # 号进行注释。

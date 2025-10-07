@@ -11,7 +11,7 @@ One of the purpose of writing this module is bypass the specific items in specif
 > Who knows? Maybe specific APPs might also use this point to check out whether the device has unlocked bootloader.  
 
 **The core reason is I don't want to do something with flashing so many modules. Therefore, I wrote this module with so many weird features.**  
-  
+**Besides, I am a Magisk user, don't use susfs even if using KernelSU series.**
 **NOTICE: This module will only modify properties, as for the result of TEE/system API, please look for other modules**
 
 ## Steps
@@ -45,13 +45,14 @@ One of the purpose of writing this module is bypass the specific items in specif
 - NOTICE: TrickyStore's configuration (`/data/adb/tricky_store/security_patch.txt`) has the highest priority, with VBMeta Disguiser's built-in configuration (`/data/adb/vbmeta_disguiser/vbmeta.conf`) coming second. In order to avoid unnecessary interact, the value of VBMeta Disguiser config file (`/data/adb/vbmeta_disguiser/vbmeta.conf`) related to security patch date properties will be ignored once detecting TrickyStore config file (`/data/adb/tricky_store/security_patch.txt`) exists.
 9. **`bootloader_props_spoof`**: Spoof bootloader properties as locked, disabled by default
 10. **`build_type_spoof`**: Spoof ROM build type as user/release, disabled by default
-11. 
 - NOTICE: Enable this feature casually will cause system cannot boot in specified ROM!
+11. **`custom_build_fingerprint`**: custom build fingerprint, you should enable feature `build_type_spoof` to use this option
+12. **`outdated_pi_props_slay`**: Remove outdated PiHooks/PixelProps properties, disabled by default
 
 ## Logs
-Logs are saved in `/data/adb/vbmeta_disguiser/logs`, as config file `/data/adb/vbmeta_disguiser`.  
+Config file are saved in `/data/adb/vbmeta_disguiser`.   
   
-**When reporting issues, please simply zip the entire `vbmeta_disguiser` folder and upload it.**
+**Logging has been removed since v1.3.9. Please submit the issue on Github issue page, I will send you log version of module according to the situation. Please simply zip the entire `vbmeta_disguiser` folder and upload it then.**
 
 ### NOTICE
 1. Save the form of keypair ONLY (key=value) in `/data/adb/vbmeta_disguiser/vbmeta.conf` is recommended. You can keep comments with symbol # too, even though it is not recommended.
