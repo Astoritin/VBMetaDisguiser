@@ -27,7 +27,7 @@ me.zhanghai.android.files/me.zhanghai.android.files.filelist.FileListActivity
 
 echo "$SEPARATE_LINE"
 echo "- VBMeta Disguiser"
-echo "- By Astoritin Ambrosius"
+echo "- By Astoritin"
 echo "$SEPARATE_LINE"
 echo "- $MOD_INTRO"
 echo "$SEPARATE_LINE"

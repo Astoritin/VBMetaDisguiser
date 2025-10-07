@@ -31,11 +31,8 @@ show_system_info
 install_env_check
 ui_print "- Installing from $ROOT_SOL app"
 ui_print "- Root: $ROOT_SOL_DETAIL"
-ui_print "- [DEBUG] MODPATH: $MODPATH"
-ui_print "- [DEBUG] MOD_UPDATE_PATH: $MOD_UPDATE_PATH"
-ui_print "- [DEBUG] MOD_PATH: $MOD_PATH"
-[ -d "$MOD_PATH_OLD" ] && rm -f "$MOD_PATH_OLD/update" && ui_print "- [DEBUG] Remove $MOD_PATH_OLD/update"
-[ -d "$MOD_PATH_OLD" ] && touch "$MOD_PATH_OLD/remove" && ui_print "- [DEBUG] Create $MOD_PATH_OLD/remove"
+[ -d "$MOD_PATH_OLD" ] && rm -f "$MOD_PATH_OLD/update"
+[ -d "$MOD_PATH_OLD" ] && touch "$MOD_PATH_OLD/remove"
 extract "customize.sh" "$TMPDIR"
 extract "wanderer.sh"
 extract "action.sh"

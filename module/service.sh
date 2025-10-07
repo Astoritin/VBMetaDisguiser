@@ -142,13 +142,8 @@ props_and_outdated_pihooks_pixelprops_slayer() {
     [ "$props_slay" = true ] && slay_list=$(get_config_var "props_list" "$CONFIG_FILE")
     [ "$outdated_pi_props_slay" = true ] && pi_list=$(resetprop | grep -E "(pihook|pixelprops|spoof\.gms|entryhooks)" | sed -r "s/^\[([^]]+)\].*/\1/")
 
-    printf '%s\n' "$slay_list" >> "$CONFIG_DIR/slay_list.txt"
-    printf '%s\n' "$pi_list" >> "$CONFIG_DIR/pi_list.txt"
-
     props_list=$(printf '%s%s%s\n' "$slay_list" "${slay_list:+$'\n'}" "$pi_list")
     props_slayer "$props_list"
-
-    printf '%s\n' "$props_list" >> "$CONFIG_DIR/props_list.txt"
 
     clean_duplicate_items "$SLAIN_PROPS"
 
