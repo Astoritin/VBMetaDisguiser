@@ -87,6 +87,12 @@ build_type_spoof_as_user_release() {
         for prop in $(resetprop | grep -oE 'ro.*.build.type'); do
             check_and_resetprop "$prop" "user"
         done
+
+        build_flavor=$(resetprop 'ro.build.flavor')
+        if [ -n "$build_flavor" ]; then
+            build_flavor=$(echo "$build_flavor" | sed -e 's/userdebug/user/g')
+            check_and_resetprop "ro.build.flavor" "$build_flavor"
+        fi
         
         if [ -n "$custom_build_fingerprint" ]; then
             check_and_resetprop "ro.build.fingerprint" "$custom_build_fingerprint"
@@ -101,7 +107,7 @@ build_type_spoof_as_user_release() {
                 build_fingerprint=$(resetprop "$prop" | sed -e 's/userdebug/user/g' -e 's/test-keys/release-keys/g')
                 check_and_resetprop "$prop" "$build_fingerprint"
             fi
-        done 
+        done
     fi
 
 }
