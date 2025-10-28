@@ -16,7 +16,7 @@ vbmeta_disguiser() {
 
     avb_version=$(get_config_var "avb_version" "$CONFIG_FILE") || avb_version="2.0"
     vbmeta_size=$(get_config_var "vbmeta_size" "$CONFIG_FILE") || vbmeta_size="4096"
-    boot_hash=$(get_config_var "boot_hash" "$CONFIG_FILE") || boot_hash="00000000000000000000000000000000"
+    boot_hash=$(get_config_var "boot_hash" "$CONFIG_FILE")
 
     resetprop "ro.boot.vbmeta.device_state" "locked"
     resetprop "ro.boot.vbmeta.hash_alg" "sha256"
