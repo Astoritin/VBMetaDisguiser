@@ -34,42 +34,6 @@ encryption_disguiser(){
 
 }
 
-bootloader_properties_spoof() {
-
-    bootloader_props_spoof=$(get_config_var "bootloader_props_spoof" "$CONFIG_FILE") || bootloader_props_spoof=false
-
-    if [ "$bootloader_props_spoof" = false ]; then
-        return 0
-    elif [ "$bootloader_props_spoof" = true ]; then
-        check_and_resetprop "ro.debuggable" "0"
-        check_and_resetprop "ro.force.debuggable" "0"
-        check_and_resetprop "ro.secure" "1"
-        check_and_resetprop "ro.adb.secure" "1"
-
-        check_and_resetprop "ro.boot.verifiedbootstate" "green"
-
-        check_and_resetprop "ro.warranty_bit" "0"
-        check_and_resetprop "ro.boot.warranty_bit" "0"
-        check_and_resetprop "ro.vendor.boot.warranty_bit" "0"
-        check_and_resetprop "ro.vendor.warranty_bit" "0"
-
-        check_and_resetprop "ro.boot.realmebootstate" "green"
-        check_and_resetprop "ro.boot.realme.lockstate" "1"
-
-        check_and_resetprop "ro.is_ever_orange" "0"
-        check_and_resetprop "ro.secureboot.lockstate" "locked"
-
-        check_and_resetprop "sys.oem_unlock_allowed" "0"
-        check_and_resetprop "ro.oem_unlock_supported" "0"
-
-        check_and_resetprop "init.svc.flash_recovery" "stopped"
-        match_and_resetprop "ro.bootmode" "recovery" "unknown"
-        match_and_resetprop "ro.boot.bootmode" "recovery" "unknown"
-        match_and_resetprop "vendor.boot.bootmode" "recovery" "unknown"
-    fi
-
-}
-
 build_type_spoof_as_user_release() {
 
     build_type_spoof=$(get_config_var "build_type_spoof" "$CONFIG_FILE") || build_type_spoof=false
@@ -213,7 +177,6 @@ if [ "$FROM_ACTION" = true ]; then
     return 0
 fi
 
-bootloader_properties_spoof
 vbmeta_disguiser
 
 while [ "$(getprop sys.boot_completed)" != "1" ]; do
