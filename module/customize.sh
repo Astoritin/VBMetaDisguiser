@@ -38,9 +38,9 @@ extract "wanderer.sh"
 extract "action.sh"
 extract "module.prop"
 extract "post-fs-data.sh"
-extract "blpropspoof.sh" "$TMPDIR"
-cat "$TMPDIR/blpropspoof.sh" > /data/adb/service.d/blpropspoof.sh
-chmod +x "/data/adb/service.d/blpropspoof.sh"
+extract "vd_bl_props_reset.sh" "$TMPDIR"
+cat "$TMPDIR/vd_bl_props_reset.sh" > /data/adb/service.d/vd_bl_props_reset.sh
+chmod +x "/data/adb/service.d/vd_bl_props_reset.sh"
 extract "service.sh"
 extract "uninstall.sh"
 [ ! -f "$CONFIG_FILE" ] && extract "vbmeta.conf" "$CONFIG_DIR"
