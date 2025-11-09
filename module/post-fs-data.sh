@@ -225,6 +225,21 @@ install_recovery_script_slayer() {
     fi
 }
 
+module_cleanup_schedule() {
+
+    POST_D="/data/adb/post-fs-data.d/"
+    CLEANUP_SH="vbmeta_disguiser_cleanup.sh"
+    CLEANUP_PATH="${POST_D}${CLEANUP_SH}"
+
+    if [ ! -f "$CLEANUP_PATH" ]; then
+        mkdir -p "$POST_D"
+        cat "$MODDIR/${CLEANUP_SH}" > "$CLEANUP_PATH"
+        chmod +x "$CLEANUP_PATH"
+    fi
+
+}
+
 [ -n "$MODDIR" ] && rm -rf "$MODDIR/system"
 security_patch_info_disguiser
 install_recovery_script_slayer
+module_cleanup_schedule

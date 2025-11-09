@@ -123,6 +123,8 @@ bootloader_properties_spoof() {
         return 0
     elif [ "$bootloader_props_spoof" = true ]; then
 
+        resetprop -w sys.boot_completed 0
+
         check_and_resetprop "ro.boot.verifiedbootstate" "green"
         check_and_resetprop "vendor.boot.verifiedbootstate" "green"
         check_and_resetprop "ro.boot.vbmeta.device_state" "locked"
@@ -132,6 +134,8 @@ bootloader_properties_spoof() {
         check_and_resetprop "ro.force.debuggable" "0"
         check_and_resetprop "ro.secure" "1"
         check_and_resetprop "ro.adb.secure" "1"
+        check_and_resetprop "ro.build.type" "user"
+        check_and_resetprop "ro.build.tags" "release-keys"
 
         check_and_resetprop "ro.warranty_bit" "0"
         check_and_resetprop "ro.boot.warranty_bit" "0"
