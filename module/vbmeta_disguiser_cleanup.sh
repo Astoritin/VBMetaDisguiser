@@ -8,6 +8,7 @@ CLEANUP_PATH="${POST_D}${CLEANUP_SH}"
 
 MOD_DIR="/data/adb/modules/vbmeta_disguiser"
 LITE_MOD_DIR="/data/adb/lite_modules/vbmeta_disguiser"
+KSU_META_MOD_DIR="/data/adb/metamodule/vbmeta_disguiser"
 
 update_config_var() {
     key_name="$1"
@@ -37,6 +38,8 @@ if [ -f "$MOD_DIR/disable" ]; then
     update_config_var "description" "$MOD_DIR/module.prop" "$DESCRIPTION"
 elif [ -f "$LITE_MOD_DIR/disable" ]; then
     update_config_var "description" "$LITE_MOD_DIR/module.prop" "$DESCRIPTION"
+elif [ -f "$KSU_META_MOD_DIR/disable" ]; then
+    update_config_var "description" "$KSU_META_MOD_DIR/module.prop" "$DESCRIPTION"
 fi
 
 rm -f "${CLEANUP_PATH}"

@@ -1,5 +1,4 @@
 #!/system/bin/sh
-MODDIR=${0%/*}
 
 CONFIG_DIR="/data/adb/vbmeta_disguiser"
 CONFIG_FILE="$CONFIG_DIR/vbmeta.conf"
